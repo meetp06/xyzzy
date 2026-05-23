@@ -30,6 +30,8 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
+  const dubbedActiveRef = useRef(false);
+  const savedVolumeRef = useRef<number>(1);
 
   const cleanupAudio = useCallback(() => {
     const audio = audioRef.current;
@@ -44,6 +46,14 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
     }
   }, []);
 
+  const forceMutePlayer = useCallback(() => {
+    const player = playerRef.current;
+    if (!player || !dubbedActiveRef.current)
+      return;
+    if (!player.muted) player.muted = true;
+    if (player.volume !== 0) player.volume = 0;
+  }, [playerRef]);
+
   const syncAudioToPlayer = useCallback(() => {
     const player = playerRef.current;
     const audio = audioRef.current;
@@ -51,24 +61,31 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
       return () => {};
 
     const onPlay = () => {
+      forceMutePlayer();
       audio.currentTime = player.currentTime;
       void audio.play();
     };
     const onPause = () => audio.pause();
     const onSeeked = () => {
+      forceMutePlayer();
       audio.currentTime = player.currentTime;
+    };
+    const onVolumeChange = () => {
+      forceMutePlayer();
     };
 
     player.addEventListener("play", onPlay);
     player.addEventListener("pause", onPause);
     player.addEventListener("seeked", onSeeked);
+    player.addEventListener("volumechange", onVolumeChange);
 
     return () => {
       player.removeEventListener("play", onPlay);
       player.removeEventListener("pause", onPause);
       player.removeEventListener("seeked", onSeeked);
+      player.removeEventListener("volumechange", onVolumeChange);
     };
-  }, [playerRef]);
+  }, [playerRef, forceMutePlayer]);
 
   const generateDub = useCallback(async () => {
     setStatus("generating");
@@ -101,7 +118,10 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
 
       const player = playerRef.current;
       if (player) {
+        savedVolumeRef.current = player.volume;
+        dubbedActiveRef.current = true;
         player.muted = true;
+        player.volume = 0;
         audio.currentTime = player.currentTime;
         if (!player.paused) {
           void audio.play();
@@ -118,9 +138,11 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
 
   const restoreOriginal = useCallback(() => {
     cleanupAudio();
+    dubbedActiveRef.current = false;
     const player = playerRef.current;
     if (player) {
       player.muted = false;
+      player.volume = savedVolumeRef.current || 1;
     }
     setDubbedLang(null);
     setStatus("idle");
@@ -138,9 +160,12 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
   useEffect(() => {
     return () => {
       cleanupAudio();
+      dubbedActiveRef.current = false;
       const player = playerRef.current;
-      if (player)
+      if (player) {
         player.muted = false;
+        player.volume = savedVolumeRef.current || 1;
+      }
     };
   }, [cleanupAudio, playerRef]);
 
