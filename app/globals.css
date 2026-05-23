@@ -53,23 +53,8 @@ html, body {
   min-height: 100vh;
 }
 
-/* Site-wide cinematic gradient backdrop */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 97, 1, 0.10) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(80, 80, 200, 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 10% 80%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
-    linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%);
-}
-body > * {
-  position: relative;
-  z-index: 1;
-}
+/* The cinematic gradient is gone — VideoBackground component renders behind
+   all content via fixed -z-10. Page content sits above it naturally. */
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Liquid-glass surfaces (from EduLearn)
