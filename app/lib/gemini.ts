@@ -26,44 +26,82 @@ const VEO_MODEL_INTERPOLATION = "veo-3.1-generate-preview";
 // Rate Limiter — Veo Video Generation
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Rate limit defaults to free-tier (2 RPM). Override via env for paid / Vertex
-// / hackathon credits where you want to burn through quota in parallel.
-const VEO_RPM = Number(process.env.VEO_RPM ?? 60);
+// Per-key rate limiter. Default 2 RPM (free tier). Override via VEO_RPM env.
+const VEO_RPM_PER_KEY = Number(process.env.VEO_RPM ?? 2);
 const VEO_WINDOW_MS = 60_000;
-const veoCallTimestamps: number[] = [];
+const veoCallTimestampsByKey = new Map<string, number[]>();
 
 export function _resetRateLimiter(): void {
-  veoCallTimestamps.length = 0;
+  veoCallTimestampsByKey.clear();
+  apiKeyCursor = 0;
 }
 
-async function waitForVeoSlot(): Promise<void> {
-  const now = Date.now();
-  while (veoCallTimestamps.length > 0 && now - veoCallTimestamps[0] > VEO_WINDOW_MS) {
-    veoCallTimestamps.shift();
+function getApiKeyPool(): string[] {
+  const poolEnv = process.env.GOOGLE_GENERATIVE_AI_API_KEYS;
+  if (poolEnv) {
+    const keys = poolEnv.split(",").map(k => k.trim()).filter(Boolean);
+    if (keys.length > 0) return keys;
+  }
+  const single = env.GOOGLE_GENERATIVE_AI_API_KEY;
+  if (!single) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEYS required");
+  return [single];
+}
+
+let apiKeyCursor = 0;
+function nextApiKey(): string {
+  const pool = getApiKeyPool();
+  const key = pool[apiKeyCursor % pool.length];
+  apiKeyCursor++;
+  return key;
+}
+
+const clientsByKey = new Map<string, GoogleGenAI>();
+function clientFor(apiKey: string): GoogleGenAI {
+  const existing = clientsByKey.get(apiKey);
+  if (existing) return existing;
+  const client = new GoogleGenAI({ apiKey });
+  clientsByKey.set(apiKey, client);
+  return client;
+}
+
+async function waitForVeoSlot(apiKey: string): Promise<void> {
+  let timestamps = veoCallTimestampsByKey.get(apiKey);
+  if (!timestamps) {
+    timestamps = [];
+    veoCallTimestampsByKey.set(apiKey, timestamps);
   }
 
-  if (veoCallTimestamps.length >= VEO_RPM) {
-    const oldestInWindow = veoCallTimestamps[0];
+  const now = Date.now();
+  while (timestamps.length > 0 && now - timestamps[0] > VEO_WINDOW_MS) {
+    timestamps.shift();
+  }
+
+  if (timestamps.length >= VEO_RPM_PER_KEY) {
+    const oldestInWindow = timestamps[0];
     const waitMs = oldestInWindow + VEO_WINDOW_MS - now + 1_000;
-    console.log(`[gemini] Rate limit: ${veoCallTimestamps.length}/${VEO_RPM} RPM used, waiting ${(waitMs / 1000).toFixed(0)}s...`);
+    const keyTail = apiKey.slice(-4);
+    console.log(`[gemini] Rate limit on key ...${keyTail}: ${timestamps.length}/${VEO_RPM_PER_KEY} RPM used, waiting ${(waitMs / 1000).toFixed(0)}s...`);
     await new Promise(resolve => setTimeout(resolve, waitMs));
   }
 
-  veoCallTimestamps.push(Date.now());
+  timestamps.push(Date.now());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Client + retry helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-let cachedClient: GoogleGenAI | null = null;
-
+/**
+ * Returns a client backed by the next key in the round-robin pool.
+ * For text/chat/TTS — single call, no rate limit handling needed beyond Gemini's own.
+ */
 export function getGenAIClient(): GoogleGenAI {
-  if (cachedClient) return cachedClient;
-  const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is required");
-  cachedClient = new GoogleGenAI({ apiKey });
-  return cachedClient;
+  return clientFor(nextApiKey());
+}
+
+/** Inspect the size of the configured key pool (for diagnostics). */
+export function getApiKeyPoolSize(): number {
+  return getApiKeyPool().length;
 }
 
 function isRetriableError(err: unknown): boolean {
@@ -255,7 +293,12 @@ interface VeoCallOptions {
 const DEFAULT_NEGATIVE_PROMPT = "low quality, blurry, distorted face, mangled hands, extra limbs, watermark, on-screen text, subtitles, captions, jittery motion, flicker, oversaturated, plastic skin, deformed mouth, lip-sync drift";
 
 async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResult> {
-  const client = getGenAIClient();
+  // Pin one key for the entire start → poll → download lifecycle.
+  // Operation IDs are scoped to the key that created them.
+  const apiKey = nextApiKey();
+  const client = clientFor(apiKey);
+  const keyTail = apiKey.slice(-4);
+  console.log(`[gemini] Veo job using key ...${keyTail} (pool size ${getApiKeyPool().length})`);
 
   const config: GenerateVideosConfig = {
     aspectRatio: options.aspectRatio ?? "16:9",
@@ -294,7 +337,7 @@ async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResul
         ? VEO_MODEL_REFERENCE
         : VEO_MODEL_DEFAULT);
 
-  await waitForVeoSlot();
+  await waitForVeoSlot(apiKey);
 
   let operation;
   try {

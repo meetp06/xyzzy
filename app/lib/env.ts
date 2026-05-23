@@ -20,8 +20,13 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: optionalString("OpenAI API key for OpenAI-backed workflows."),
   ANTHROPIC_API_KEY: optionalString("Anthropic API key for Claude-backed workflows."),
 
-  // Google Gemini API key (for LLM, Video Generation, and TTS)
+  // Google Gemini API key (for LLM, Video Generation, and TTS).
+  // Single key (legacy). Use GOOGLE_GENERATIVE_AI_API_KEYS for a pool.
   GOOGLE_GENERATIVE_AI_API_KEY: optionalString("Google Generative AI API key for Gemini LLM, Veo video generation, and TTS."),
+
+  // Comma-separated pool of Gemini keys. Each call round-robins → multiplies
+  // parallel throughput. Falls back to GOOGLE_GENERATIVE_AI_API_KEY when unset.
+  GOOGLE_GENERATIVE_AI_API_KEYS: optionalString("Comma-separated pool of Gemini API keys for round-robin parallel use."),
 
   // ElevenLabs API key (optional; required only if you want to use translateAudio)
   ELEVENLABS_API_KEY: optionalString("ElevenLabs API key for translateAudio workflow."),
