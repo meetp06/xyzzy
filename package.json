@@ -23,7 +23,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.86",
     "@ai-sdk/openai-compatible": "^2.0.47",
-    "@google/generative-ai": "^0.24.1",
+    "@google/genai": "^2.6.0",
     "@mux/ai": "0.3.1",
     "@mux/mux-node": "^12.8.1",
     "@mux/mux-player-react": "^3.10.1",

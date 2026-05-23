@@ -4,91 +4,185 @@ vi.stubEnv("NODE_ENV", "test");
 vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "test-gemini-key");
 
 const mockGenerateContent = vi.fn();
+const mockGenerateVideos = vi.fn();
+const mockGetVideosOperation = vi.fn();
+const mockFilesDownload = vi.fn();
+const mockSendMessage = vi.fn();
+const mockChatsCreate = vi.fn();
 
-vi.mock("@google/generative-ai", () => ({
-  GoogleGenerativeAI: vi.fn(() => ({
-    getGenerativeModel: vi.fn(() => ({
+vi.mock("@google/genai", () => {
+  class GoogleGenAI {
+    models = {
       generateContent: mockGenerateContent,
-    })),
-  })),
-}));
+      generateVideos: mockGenerateVideos,
+    };
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+    operations = {
+      getVideosOperation: mockGetVideosOperation,
+    };
+
+    files = {
+      download: mockFilesDownload,
+    };
+
+    chats = {
+      create: mockChatsCreate,
+    };
+  }
+
+  return {
+    GoogleGenAI,
+    PersonGeneration: { ALLOW_ADULT: "ALLOW_ADULT" },
+    VideoGenerationReferenceType: { ASSET: "ASSET", STYLE: "STYLE" },
+  };
+});
 
 describe("gemini", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockGenerateContent.mockReset();
+    mockGenerateVideos.mockReset();
+    mockGetVideosOperation.mockReset();
+    mockFilesDownload.mockReset();
+    mockSendMessage.mockReset();
+    mockChatsCreate.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("generateText", () => {
-    beforeEach(() => {
-      vi.resetModules();
-      mockGenerateContent.mockReset();
-      mockFetch.mockReset();
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-    });
-
     it("calls Gemini with correct model and returns text", async () => {
-      mockGenerateContent.mockResolvedValueOnce({
-        response: {
-          text: () => "Generated response text",
-        },
-      });
+      mockGenerateContent.mockResolvedValueOnce({ text: "Generated response text" });
 
       const { generateText } = await import("./gemini");
       const result = await generateText("test prompt");
+
       expect(result).toBe("Generated response text");
-      expect(mockGenerateContent).toHaveBeenCalledWith("test prompt");
+      expect(mockGenerateContent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "gemini-2.5-flash",
+          contents: "test prompt",
+        }),
+      );
     });
 
     it("throws on empty response", async () => {
-      mockGenerateContent.mockResolvedValueOnce({
-        response: {
-          text: () => "",
-        },
-      });
+      mockGenerateContent.mockResolvedValueOnce({ text: "" });
 
       const { generateText } = await import("./gemini");
       await expect(generateText("test")).rejects.toThrow("Gemini returned empty response");
     });
+
+    it("attaches systemInstruction when provided", async () => {
+      mockGenerateContent.mockResolvedValueOnce({ text: "ok" });
+
+      const { generateText } = await import("./gemini");
+      await generateText("hi", "be terse");
+
+      expect(mockGenerateContent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config: expect.objectContaining({ systemInstruction: "be terse" }),
+        }),
+      );
+    });
   });
 
   describe("generateVideoClip", () => {
-    it("calls Veo API and polls for completion", async () => {
-      // Mock the initial POST to create operation
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ name: "operations/test-op-123" }),
+    it("starts a Veo op and downloads the video when op completes immediately", async () => {
+      mockGenerateVideos.mockResolvedValueOnce({
+        name: "operations/test-op-123",
+        done: true,
+        response: {
+          generatedVideos: [{ video: { uri: "https://generativelanguage.googleapis.com/v1beta/files/test:download" } }],
+        },
       });
 
-      // Mock the polling response (completed)
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          done: true,
-          response: {
-            generatedVideos: [{
-              video: { uri: "https://storage.googleapis.com/test-video.mp4" },
-            }],
-          },
-        }),
-      });
-
-      // Mock the video download
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)),
+      mockFilesDownload.mockImplementationOnce(async ({ downloadPath }: { downloadPath: string }) => {
+        const fs = await import("node:fs");
+        fs.writeFileSync(downloadPath, Buffer.from("fake-video-bytes"));
       });
 
       const { generateVideoClip, _resetRateLimiter } = await import("./gemini");
       _resetRateLimiter();
 
       const result = await generateVideoClip("A test video prompt");
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("veo-2:predictLongRunning"),
-        expect.anything(),
+
+      expect(mockGenerateVideos).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "veo-3.0-generate-001",
+          prompt: "A test video prompt",
+        }),
       );
-      expect(result.videoUrl).toContain("test-video.mp4");
+      expect(result.videoUrl).toContain("test:download");
+      expect(result.localPath).toMatch(/clip-.*\.mp4$/);
+    });
+
+    it("throws VeoRAIFilterError when response is filtered", async () => {
+      mockGenerateVideos.mockResolvedValueOnce({
+        name: "operations/filtered",
+        done: true,
+        response: {
+          generatedVideos: [],
+          raiMediaFilteredCount: 1,
+          raiMediaFilteredReasons: ["unsafe"],
+        },
+      });
+
+      const { generateVideoClip, _resetRateLimiter, VeoRAIFilterError } = await import("./gemini");
+      _resetRateLimiter();
+
+      await expect(generateVideoClip("filtered prompt")).rejects.toBeInstanceOf(VeoRAIFilterError);
+    });
+  });
+
+  describe("generateChatReply", () => {
+    it("creates a chat session and sends the message", async () => {
+      mockSendMessage.mockResolvedValueOnce({ text: "chat reply" });
+      mockChatsCreate.mockReturnValueOnce({ sendMessage: mockSendMessage });
+
+      const { generateChatReply } = await import("./gemini");
+      const reply = await generateChatReply(
+        [{ role: "user", text: "hello" }, { role: "model", text: "hi" }],
+        "how are you?",
+        "be helpful",
+      );
+
+      expect(reply).toBe("chat reply");
+      expect(mockChatsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "gemini-2.5-flash",
+          config: { systemInstruction: "be helpful" },
+          history: [
+            { role: "user", parts: [{ text: "hello" }] },
+            { role: "model", parts: [{ text: "hi" }] },
+          ],
+        }),
+      );
+      expect(mockSendMessage).toHaveBeenCalledWith({ message: "how are you?" });
+    });
+  });
+
+  describe("withRetry", () => {
+    it("retries transient fetch failures and eventually succeeds", async () => {
+      const fn = vi.fn()
+        .mockRejectedValueOnce(new Error("fetch failed"))
+        .mockResolvedValueOnce("ok");
+
+      const { withRetry } = await import("./gemini");
+      const result = await withRetry(fn, { baseDelayMs: 1, label: "test" });
+
+      expect(result).toBe("ok");
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not retry non-retriable errors", async () => {
+      const fn = vi.fn().mockRejectedValue(new Error("invalid request"));
+
+      const { withRetry } = await import("./gemini");
+      await expect(withRetry(fn, { baseDelayMs: 1 })).rejects.toThrow("invalid request");
+      expect(fn).toHaveBeenCalledTimes(1);
     });
   });
 });

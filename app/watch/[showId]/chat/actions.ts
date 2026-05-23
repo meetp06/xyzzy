@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
 import { env } from "@/app/lib/env";
+import { generateChatReply, type ChatTurn } from "@/app/lib/gemini";
 import * as schema from "@/db/schema";
 import type { ChatMessage } from "@/db/schema";
 
@@ -86,31 +87,15 @@ Guidelines:
 - Keep responses concise (2-4 sentences unless more detail is requested)
 - You can reference specific parts of the transcript`;
 
-    // Call Gemini for chat response
-    const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey)
+    if (!env.GOOGLE_GENERATIVE_AI_API_KEY)
       throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is required");
 
-    const { GoogleGenerativeAI } = await import("@google/generative-ai");
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: systemPrompt,
-    });
-
-    // Convert history to Gemini format
-    const geminiHistory = history.slice(0, -1).map(msg => ({
-      role: msg.role === "assistant" ? "model" as const : "user" as const,
-      parts: [{ text: msg.content }],
+    const chatHistory: ChatTurn[] = history.slice(0, -1).map(msg => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      text: msg.content,
     }));
 
-    const chat = model.startChat({ history: geminiHistory });
-    const chatResult = await chat.sendMessage(userMessage.trim());
-    const resultText = chatResult.response.text();
-
-    if (!resultText) {
-      throw new Error("Gemini returned empty response");
-    }
+    const resultText = await generateChatReply(chatHistory, userMessage.trim(), systemPrompt);
 
     // Save assistant response
     const [savedAssistantMsg] = await db
