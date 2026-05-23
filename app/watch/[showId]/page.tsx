@@ -58,12 +58,26 @@ export default async function WatchPage({
             >
               {template.name}
             </p>
-            <h2
-              className="text-3xl font-extrabold tracking-tight md:text-4xl"
-              style={{ fontFamily: "var(--font-syne)" }}
-            >
-              {show.topic}
-            </h2>
+            {(() => {
+              // The DB-stored topic may include the user's appended
+              // "Additional context from user: …" block. Strip it before
+              // rendering the headline, then truncate to one short line.
+              const titleSource = show.topic.split(/\n\s*Additional context from user:/i)[0].trim();
+              const words = titleSource.split(/\s+/).filter(Boolean);
+              const MAX_WORDS = 8;
+              const shown = words.length > MAX_WORDS
+                ? `${words.slice(0, MAX_WORDS).join(" ")}…`
+                : words.join(" ");
+              return (
+                <h2
+                  className="truncate text-3xl font-extrabold tracking-tight md:text-4xl"
+                  style={{ fontFamily: "var(--font-syne)" }}
+                  title={show.topic}
+                >
+                  {shown}
+                </h2>
+              );
+            })()}
             <div className="mt-3 flex items-center gap-3">
               <span className="badge" style={{ fontFamily: "var(--font-space-mono)" }}>
                 {show.durationSeconds}
