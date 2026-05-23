@@ -212,7 +212,7 @@ async function researchStep(
     }
   }
 
-  const researchPrompt = `Research the following topic thoroughly. Provide key facts, recent developments, interesting angles, controversies, and anything a comedy talk show host would need to create funny, informed commentary.
+  const researchPrompt = `Research the following topic thoroughly. Provide key facts, recent developments, interesting angles, context, and the kind of details a well-informed talk-show host would need to deliver a clear, engaging segment about it.
 
 Topic: ${topicContent}
 
@@ -224,10 +224,12 @@ Familiarity level: ${show.familiarity} (${
       "Deep expertise assumed, focus on nuanced insider angles"
 })
 
+Tone: match what the topic itself deserves — informative for serious topics, light for light topics. Do not assume comedy.
+
 Provide a comprehensive research brief in 500-1000 words.`;
 
   console.log("[workflow:research] Calling Gemini for research...");
-  const researchContext = await generateText(researchPrompt, "You are a research assistant for a comedy talk show. Gather comprehensive information that can be turned into entertaining commentary.", false);
+  const researchContext = await generateText(researchPrompt, "You are a research assistant for a talk show. Gather comprehensive, accurate information that a host can speak from naturally. Match the tone the topic itself calls for — do not force humor.", false);
   console.log("[workflow:research] Gemini returned", researchContext.length, "chars");
 
   await db.update(schema.generatedShows)
@@ -278,10 +280,10 @@ async function scriptStep(
 
   if (template.showType === "monologue") {
     const host = hosts[0];
-    scriptPrompt = `Write a ${durationSec}-second monologue for a talk show segment.
+    scriptPrompt = `Write a ${durationSec}-second monologue for a talk-show segment.
 
 HOST: ${host.name}
-PERSONALITY: ${host.personality}
+HOST INSTRUCTIONS: ${host.personality}
 
 RESEARCH CONTEXT:
 ${show.researchContext}
@@ -289,10 +291,11 @@ ${show.researchContext}
 TOPIC: ${show.topic}
 
 Requirements:
-- Write exactly ${clipCount} segments, each about 8 seconds of spoken content (roughly 20-25 words per segment)
-- Adopt the host's voice, humor style, and mannerisms completely
-- Start strong with a hook, build with jokes and insights, end with a punchy closer
-- Include the host's signature phrases and comedic style
+- Write exactly ${clipCount} segments, each about 8 seconds of spoken content (roughly 20-25 words per segment).
+- The host is the SAME single person across every segment — never introduce or imply another speaker.
+- Match the tone the topic itself demands. If the topic is serious, be measured and informative. If it's absurd, be wry. Do NOT force jokes, laughter, or punchlines.
+- Start with a clear hook, develop the idea, end with a thought that lands.
+- Plain spoken English. No stage directions, no "(laughs)", no audience cues.
 
 Format your response as JSON array:
 [{"speaker": "${host.name}", "text": "segment text here", "clipIndex": 0}, ...]`;
@@ -320,7 +323,7 @@ Format your response as JSON array:
   }
 
   console.log("[workflow:script] Calling Gemini for script, clipCount:", clipCount);
-  const scriptResult = await generateText(scriptPrompt, "You are an Emmy-winning comedy writer. Write scripts that are genuinely funny, sharp, and perfectly capture each host's voice. Output valid JSON only, no markdown fences.");
+  const scriptResult = await generateText(scriptPrompt, "You are a professional talk-show writer. Write scripts that are sharp, clear, and adopt the tone the topic itself calls for — informative, observational, or wry as appropriate. Never force humor. Output valid JSON only, no markdown fences.");
   console.log("[workflow:script] Gemini returned", scriptResult.length, "chars");
 
   // Parse the JSON response
@@ -677,7 +680,7 @@ async function reviseSegmentText(
 ): Promise<string> {
   const { generateText } = await import("@/app/lib/gemini");
 
-  const prompt = `You are revising a line of dialogue for a talk show script. The line was rejected by a video generation AI because it contained words or references that triggered a content filter.
+  const prompt = `You are revising a line of dialogue for a talk-show script. The line was rejected by a video generation AI because it contained words or references that triggered a content filter.
 
 ORIGINAL LINE:
 "${originalText}"
@@ -686,13 +689,13 @@ FILTER REASON:
 ${filterReasons.join("\n")}
 
 Rewrite this line to avoid triggering the filter. Rules:
-- Keep the same comedic intent, tone, and approximate length
+- Keep the same intent, tone, and approximate length
 - Remove or rephrase any celebrity names, real people's names, real institution names, or specific references that could be flagged
 - Replace specific names with generic equivalents (e.g., "Harvard" → "an Ivy League school", "Colin" → "the anchor")
 - Do NOT add any explanation — output ONLY the revised line, nothing else
 - Keep it to roughly the same number of words (20-25 words)`;
 
-  const result = await generateText(prompt, "You are a comedy writer. Output only the revised line.");
+  const result = await generateText(prompt, "You are a talk-show writer. Output only the revised line.");
 
   // Strip any quotes the model might wrap around the output
   return result.replace(/^["']|["']$/g, "").trim();
@@ -739,22 +742,27 @@ function buildVeoPrompt(
   const host = hosts.find(h => h.name === segment.speaker) ?? hosts[0];
   const sanitizedNotes = sanitizeNotesForVeo(notes);
 
-  let prompt = "A professional late-night talk show segment. ";
+  let prompt = "A professional talk-show segment, broadcast quality. ";
 
   if (showType === "conversation") {
-    prompt += "Two hosts sit behind a news desk with a world map graphic behind them. ";
+    prompt += "Two hosts sit behind a modern news desk with a subtle graphic behind them. ";
     if (host.position === "left") {
-      prompt += "The person on the LEFT is speaking and gesturing. ";
+      prompt += "The person on the LEFT is speaking; the person on the right listens. ";
     } else if (host.position === "right") {
-      prompt += "The person on the RIGHT is speaking and gesturing. ";
+      prompt += "The person on the RIGHT is speaking; the person on the left listens. ";
     }
   } else {
-    prompt += "A single host behind a desk delivering a monologue, with a colorful graphic behind them. ";
+    // Monologue: lock identity hard so Veo does not morph the host across clips.
+    prompt += "A single host seated behind a modern minimalist desk, speaking directly to camera. ";
+    prompt += "The host is the SAME individual depicted in the reference image — preserve facial features, hairstyle, age, skin tone, and clothing exactly across every shot. ";
+    prompt += "Medium close-up framing, eyeline to camera, neutral studio backdrop. ";
   }
 
-  prompt += `The host is saying: "${segment.text}" `;
-  prompt += `Style: ${sanitizedNotes} `;
-  prompt += "The host should be animated, expressive, and natural. Studio lighting, professional TV production quality.";
+  prompt += `The host says, in a calm, natural delivery: "${segment.text}". `;
+  prompt += "No laughter, no exaggerated facial expressions, no audience reactions, no on-screen text or captions. ";
+  prompt += "Subtle natural gestures only. Lip movement matches the words. ";
+  if (sanitizedNotes) prompt += `Set notes: ${sanitizedNotes}. `;
+  prompt += "Soft studio key light, slight rim light, shallow depth of field, professional TV production quality.";
 
   return prompt;
 }
