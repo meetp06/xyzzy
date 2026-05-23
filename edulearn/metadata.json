@@ -1,0 +1,8 @@
+{
+  "name": "EduLearn",
+  "description": "An AI-powered education platform with a fullscreen video hero section.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
