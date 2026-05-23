@@ -55,15 +55,17 @@ export function TemplateCard({ template, showCount }: TemplateCardProps) {
       {template.referenceImageUrl ?
           (
             <div className="border-b-3 border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={template.referenceImageUrl}
                 alt={template.name}
-                className="h-36 w-full object-cover"
+                className="h-56 w-full object-cover"
+                style={{ objectPosition: "center 30%" }}
               />
             </div>
           ) :
           (
-            <div className="flex h-36 items-center justify-center border-b-3 border-border bg-surface-elevated">
+            <div className="flex h-56 items-center justify-center border-b-3 border-border bg-surface-elevated">
               <span
                 className="text-3xl font-extrabold uppercase tracking-widest opacity-20"
                 style={{ fontFamily: "var(--font-syne)" }}
