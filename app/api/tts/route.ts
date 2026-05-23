@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "audio/wav",
         "Content-Length": wav.length.toString(),
+        "Cache-Control": "no-store",
       },
     });
   } catch (err) {
