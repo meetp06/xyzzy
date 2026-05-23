@@ -62,7 +62,7 @@ export async function createShowAction(formData: CreateShowInput): Promise<Creat
     return { error: "Invalid topic type." };
   }
 
-  const validDurations = [16, 24, 32];
+  const validDurations = [16, 24, 32, 48, 64, 96];
   if (!validDurations.includes(formData.durationSeconds)) {
     return { error: "Invalid duration." };
   }

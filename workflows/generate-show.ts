@@ -79,15 +79,35 @@ export async function generateShowWorkflow(
     const clipIds = await createClipRecordsStep(progress, showId);
     console.log("[workflow] Created", clipIds.length, "clip records");
 
-    for (let i = 0; i < clipIds.length; i++) {
-      console.log("[workflow] Generating clip", i + 1, "of", clipIds.length);
-      await generateSingleClipStep(
-        showId,
-        clipIds[i],
-        anchorResult.firstFramePath,
-        anchorResult.lastFramePath,
-        anchorResult.useFrameChaining,
-        anchorResult.refImageSlug,
+    // Frame-chained clips MUST run serially (each one needs the previous clip's
+    // last frame). Independent clips fan out in parallel — Veo handles backpressure
+    // through the shared rate limiter in app/lib/gemini.ts.
+    if (anchorResult.useFrameChaining) {
+      for (let i = 0; i < clipIds.length; i++) {
+        console.log("[workflow] Generating clip", i + 1, "of", clipIds.length, "(serial — frame chaining)");
+        await generateSingleClipStep(
+          showId,
+          clipIds[i],
+          anchorResult.firstFramePath,
+          anchorResult.lastFramePath,
+          anchorResult.useFrameChaining,
+          anchorResult.refImageSlug,
+        );
+      }
+    } else {
+      console.log("[workflow] Generating", clipIds.length, "clips in parallel");
+      await Promise.all(
+        clipIds.map((clipId, i) => {
+          console.log("[workflow] → dispatching clip", i + 1, "/", clipIds.length);
+          return generateSingleClipStep(
+            showId,
+            clipId,
+            null,
+            null,
+            false,
+            anchorResult.refImageSlug,
+          );
+        }),
       );
     }
 

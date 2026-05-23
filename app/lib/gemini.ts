@@ -26,7 +26,9 @@ const VEO_MODEL_INTERPOLATION = "veo-3.1-generate-preview";
 // Rate Limiter — Veo Video Generation
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VEO_RPM = 2;
+// Rate limit defaults to free-tier (2 RPM). Override via env for paid / Vertex
+// / hackathon credits where you want to burn through quota in parallel.
+const VEO_RPM = Number(process.env.VEO_RPM ?? 60);
 const VEO_WINDOW_MS = 60_000;
 const veoCallTimestamps: number[] = [];
 
