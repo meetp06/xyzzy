@@ -227,6 +227,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
         createdAt: generatedShows.createdAt,
         templateName: showTemplates.name,
         showType: showTemplates.showType,
+        templateImageUrl: showTemplates.referenceImageUrl,
       })
       .from(generatedShows)
       .innerJoin(showTemplates, eq(generatedShows.templateId, showTemplates.id))
@@ -276,6 +277,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
                         playbackId={show.muxPlaybackId}
                         durationSeconds={show.durationSeconds}
                         createdAt={show.createdAt}
+                        templateImageUrl={show.templateImageUrl}
                       />
                     ))}
                   </div>

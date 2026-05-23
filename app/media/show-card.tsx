@@ -12,10 +12,19 @@ interface ShowCardProps {
   playbackId: string | null;
   durationSeconds: number;
   createdAt: Date | null;
+  templateImageUrl?: string | null;
 }
 
-function getThumbnailUrl(playbackId: string): string {
+function getMuxThumbnailUrl(playbackId: string): string {
   return `https://image.mux.com/${playbackId}/thumbnail.webp?width=640&height=360&fit_mode=smartcrop`;
+}
+
+function getLocalVideoSrc(playbackId: string): string | null {
+  if (!playbackId.startsWith("local:")) return null;
+  const filename = playbackId.slice("local:".length);
+  // `#t=0.1` tells the browser to seek to 0.1s so the rendered poster shows
+  // a real frame rather than a black first frame.
+  return `/files/${filename}#t=0.1`;
 }
 
 function formatDate(date: Date): string {
@@ -26,7 +35,7 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-export function ShowCard({ id, topic, templateName, showType, playbackId, durationSeconds, createdAt }: ShowCardProps) {
+export function ShowCard({ id, topic, templateName, showType, playbackId, durationSeconds, createdAt, templateImageUrl }: ShowCardProps) {
   const shouldReduceMotion = useReducedMotion();
 
   const cardVariants = {
@@ -74,27 +83,72 @@ export function ShowCard({ id, topic, templateName, showType, playbackId, durati
         {/* Thumbnail */}
         <div className="border-b-3 border-border bg-surface p-3">
           <div className="relative aspect-video w-full overflow-hidden border-3 border-border bg-background-dark">
-            {playbackId ?
-                (
+            {(() => {
+              const localSrc = playbackId ? getLocalVideoSrc(playbackId) : null;
+              if (playbackId && !localSrc) {
+                // Mux playback ID — use Mux's smartcrop thumbnail
+                return (
                   <motion.div
                     className="absolute inset-0"
                     variants={thumbVariants}
                     transition={{ type: "spring", stiffness: 450, damping: 30 }}
                   >
                     <Image
-                      src={getThumbnailUrl(playbackId)}
+                      src={getMuxThumbnailUrl(playbackId)}
                       alt={topic}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover"
                     />
                   </motion.div>
-                ) :
-                (
-                  <div className="flex h-full items-center justify-center">
-                    <span className="text-foreground-muted">No preview</span>
-                  </div>
-                )}
+                );
+              }
+              if (localSrc) {
+                // Local MP4 — render a muted video element seeked to 0.1s so the
+                // browser paints a real frame from the show as the cover.
+                // templateImageUrl serves as the poster fallback before the video
+                // metadata loads.
+                return (
+                  <motion.div
+                    className="absolute inset-0"
+                    variants={thumbVariants}
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  >
+                    <video
+                      src={localSrc}
+                      poster={templateImageUrl ?? undefined}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                  </motion.div>
+                );
+              }
+              // No playback at all — fall back to host portrait if we have one
+              if (templateImageUrl) {
+                return (
+                  <motion.div
+                    className="absolute inset-0"
+                    variants={thumbVariants}
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={templateImageUrl}
+                      alt={templateName}
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: "center 30%" }}
+                    />
+                  </motion.div>
+                );
+              }
+              return (
+                <div className="flex h-full items-center justify-center">
+                  <span className="text-foreground-muted">No preview</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
