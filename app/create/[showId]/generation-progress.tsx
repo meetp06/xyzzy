@@ -7,9 +7,8 @@ import type { GeneratedShow, ShowTemplate } from "@/db/schema";
 
 import { pollShowStatusAction } from "./actions";
 import { GENERATION_STEPS, POLL_INTERVAL } from "./constants";
-import { TVLoading } from "./tv-loading";
-
 import type { GenerationStepId } from "./constants";
+import { TVLoading } from "./tv-loading";
 
 interface GenerationProgressProps {
   show: GeneratedShow;
@@ -39,8 +38,10 @@ function getCompletedSteps(status: string, useFrameChaining: boolean): Generatio
   const stepOrder = getStepOrder(useFrameChaining);
   const currentStep = STATUS_TO_STEP[status];
 
-  if (status === "ready") return [...stepOrder];
-  if (!currentStep) return [];
+  if (status === "ready")
+    return [...stepOrder];
+  if (!currentStep)
+    return [];
 
   const currentIndex = stepOrder.indexOf(currentStep);
   return stepOrder.slice(0, currentIndex);
@@ -54,7 +55,8 @@ export function GenerationProgress({ show, template }: GenerationProgressProps) 
   const poll = useCallback(async () => {
     const result = await pollShowStatusAction(show.id);
     setStatus(result.status);
-    if (result.error) setError(result.error);
+    if (result.error)
+      setError(result.error);
 
     if (result.status === "ready" && result.muxPlaybackId) {
       // Redirect to watch page after a brief delay
@@ -65,7 +67,8 @@ export function GenerationProgress({ show, template }: GenerationProgressProps) 
   }, [show.id, router]);
 
   useEffect(() => {
-    if (status === "ready" || status === "failed") return;
+    if (status === "ready" || status === "failed")
+      return;
 
     const interval = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(interval);
@@ -106,15 +109,19 @@ export function GenerationProgress({ show, template }: GenerationProgressProps) 
                 <div key={step.id} className="flex items-center gap-3">
                   {/* Icon */}
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center border-2 border-border">
-                    {isCompleted ? (
-                      <svg className="h-3.5 w-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="square" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : isCurrent ? (
-                      <div className="h-2 w-2 animate-pulse bg-accent" />
-                    ) : (
-                      <div className="h-2 w-2 bg-foreground-light/30" />
-                    )}
+                    {isCompleted ?
+                        (
+                          <svg className="h-3.5 w-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="square" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) :
+                      isCurrent ?
+                          (
+                            <div className="h-2 w-2 animate-pulse bg-accent" />
+                          ) :
+                          (
+                            <div className="h-2 w-2 bg-foreground-light/30" />
+                          )}
                   </div>
 
                   {/* Label */}

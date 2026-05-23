@@ -79,7 +79,7 @@ export function VideoPlayer({
         style={{
           aspectRatio: "16 / 9",
           width: "100%",
-          backgroundColor: "#000"
+          backgroundColor: "#000",
         }}
       />
     );

@@ -7,7 +7,6 @@ import { Pool } from "pg";
 
 import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
-
 import type { ShowTemplate } from "@/db/schema";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -31,11 +30,15 @@ interface TemplateInput {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function validateTemplate(data: TemplateInput): string | null {
-  if (!data.name?.trim()) return "Template name is required.";
-  if (!["monologue", "conversation"].includes(data.showType)) return "Show type must be monologue or conversation.";
-  if (!data.hosts || data.hosts.length === 0) return "At least one host is required.";
+  if (!data.name?.trim())
+    return "Template name is required.";
+  if (!["monologue", "conversation"].includes(data.showType))
+    return "Show type must be monologue or conversation.";
+  if (!data.hosts || data.hosts.length === 0)
+    return "At least one host is required.";
   for (const host of data.hosts) {
-    if (!host.name?.trim()) return "Each host must have a name.";
+    if (!host.name?.trim())
+      return "Each host must have a name.";
   }
   return null;
 }
@@ -67,7 +70,8 @@ export async function getTemplateByIdAction(
     const template = await db.query.showTemplates.findFirst({
       where: eq(schema.showTemplates.id, id),
     });
-    if (!template) return { error: "Template not found." };
+    if (!template)
+      return { error: "Template not found." };
     return { template };
   } catch (error) {
     console.error("Failed to fetch template:", error);
@@ -83,7 +87,8 @@ export async function createTemplateAction(
   data: TemplateInput,
 ): Promise<{ templateId?: string; error?: string }> {
   const validationError = validateTemplate(data);
-  if (validationError) return { error: validationError };
+  if (validationError)
+    return { error: validationError };
 
   try {
     const [template] = await db
@@ -118,7 +123,8 @@ export async function updateTemplateAction(
   data: TemplateInput,
 ): Promise<{ success?: boolean; error?: string }> {
   const validationError = validateTemplate(data);
-  if (validationError) return { error: validationError };
+  if (validationError)
+    return { error: validationError };
 
   try {
     const result = await db
@@ -139,7 +145,8 @@ export async function updateTemplateAction(
       .where(eq(schema.showTemplates.id, id))
       .returning({ id: schema.showTemplates.id });
 
-    if (result.length === 0) return { error: "Template not found." };
+    if (result.length === 0)
+      return { error: "Template not found." };
     return { success: true };
   } catch (error) {
     console.error("Failed to update template:", error);

@@ -47,14 +47,17 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
   const syncAudioToPlayer = useCallback(() => {
     const player = playerRef.current;
     const audio = audioRef.current;
-    if (!player || !audio) return () => {};
+    if (!player || !audio)
+      return () => {};
 
     const onPlay = () => {
       audio.currentTime = player.currentTime;
       void audio.play();
     };
     const onPause = () => audio.pause();
-    const onSeeked = () => { audio.currentTime = player.currentTime; };
+    const onSeeked = () => {
+      audio.currentTime = player.currentTime;
+    };
 
     player.addEventListener("play", onPlay);
     player.addEventListener("pause", onPause);
@@ -125,7 +128,8 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
 
   // Set up sync listeners when dubbed
   useEffect(() => {
-    if (status !== "dubbed") return;
+    if (status !== "dubbed")
+      return;
     const cleanup = syncAudioToPlayer();
     return cleanup;
   }, [status, syncAudioToPlayer]);
@@ -135,7 +139,8 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
     return () => {
       cleanupAudio();
       const player = playerRef.current;
-      if (player) player.muted = false;
+      if (player)
+        player.muted = false;
     };
   }, [cleanupAudio, playerRef]);
 
@@ -170,7 +175,8 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
             value={selectedLang.code}
             onChange={(e) => {
               const lang = TARGET_LANGUAGES.find(l => l.code === e.target.value);
-              if (lang) setSelectedLang(lang);
+              if (lang)
+                setSelectedLang(lang);
             }}
             disabled={status === "generating"}
             className="w-full appearance-none border-2 border-border bg-surface px-3 py-2 pr-8 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
@@ -187,45 +193,58 @@ export function DubbingPanel({ transcript, hosts }: DubbingPanelProps) {
         </div>
 
         {/* Dub / Restore buttons */}
-        {status === "dubbed" ? (
-          <div className="space-y-2">
-            <div
-              className="flex items-center gap-2 border-2 border-green-600 bg-green-50 px-3 py-2"
-              style={{ fontFamily: "var(--font-space-mono)" }}
-            >
-              <span className="text-xs font-bold text-green-800">
-                Audio dubbed to {dubbedLang}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={restoreOriginal}
-              className="flex w-full items-center justify-center border-3 border-border bg-background-dark px-4 py-3 font-bold uppercase tracking-wider text-white transition-all hover:brightness-125"
-              style={{ fontFamily: "var(--font-space-mono)" }}
-            >
-              <span className="text-xs">Restore Original Audio</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={generateDub}
-            disabled={status === "generating"}
-            className="flex w-full items-center justify-center gap-2 border-3 border-border bg-accent px-4 py-3 font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-            style={{ fontFamily: "var(--font-space-mono)" }}
-          >
-            {status === "generating" ? (
-              <>
-                <Spinner />
-                <span className="text-xs">Generating {selectedLang.name} dub...</span>
-              </>
-            ) : (
-              <span className="text-xs">
-                Dub Audio → {selectedLang.name.toUpperCase()}
-              </span>
+        {status === "dubbed" ?
+            (
+              <div className="space-y-2">
+                <div
+                  className="flex items-center gap-2 border-2 border-green-600 bg-green-50 px-3 py-2"
+                  style={{ fontFamily: "var(--font-space-mono)" }}
+                >
+                  <span className="text-xs font-bold text-green-800">
+                    Audio dubbed to
+                    {" "}
+                    {dubbedLang}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={restoreOriginal}
+                  className="flex w-full items-center justify-center border-3 border-border bg-background-dark px-4 py-3 font-bold uppercase tracking-wider text-white transition-all hover:brightness-125"
+                  style={{ fontFamily: "var(--font-space-mono)" }}
+                >
+                  <span className="text-xs">Restore Original Audio</span>
+                </button>
+              </div>
+            ) :
+            (
+              <button
+                type="button"
+                onClick={generateDub}
+                disabled={status === "generating"}
+                className="flex w-full items-center justify-center gap-2 border-3 border-border bg-accent px-4 py-3 font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ fontFamily: "var(--font-space-mono)" }}
+              >
+                {status === "generating" ?
+                    (
+                      <>
+                        <Spinner />
+                        <span className="text-xs">
+                          Generating
+                          {selectedLang.name}
+                          {" "}
+                          dub...
+                        </span>
+                      </>
+                    ) :
+                    (
+                      <span className="text-xs">
+                        Dub Audio →
+                        {" "}
+                        {selectedLang.name.toUpperCase()}
+                      </span>
+                    )}
+              </button>
             )}
-          </button>
-        )}
 
         {/* Error */}
         {status === "error" && error && (

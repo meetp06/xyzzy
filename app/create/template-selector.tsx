@@ -25,7 +25,7 @@ export function TemplateSelector({ templates, selectedId, onSelect }: TemplateSe
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {templates.map(template => {
+      {templates.map((template) => {
         const isSelected = template.id === selectedId;
         const hosts = (template.hosts as Host[]) ?? [];
 
@@ -34,9 +34,9 @@ export function TemplateSelector({ templates, selectedId, onSelect }: TemplateSe
             key={template.id}
             type="button"
             className={`card-brutal cursor-pointer overflow-hidden text-left transition-all ${
-              isSelected
-                ? "ring-2 ring-accent ring-offset-2"
-                : ""
+              isSelected ?
+                "ring-2 ring-accent ring-offset-2" :
+                ""
             }`}
             style={{
               borderWidth: isSelected ? "4px" : "3px",
@@ -44,31 +44,33 @@ export function TemplateSelector({ templates, selectedId, onSelect }: TemplateSe
             onClick={() => onSelect(template.id)}
           >
             {/* Reference image or placeholder */}
-            {template.referenceImageUrl ? (
-              <div className="border-b-3 border-border">
-                <img
-                  src={template.referenceImageUrl}
-                  alt={template.name}
-                  className="h-36 w-full object-cover"
-                />
-              </div>
-            ) : (
-              <div
-                className="flex h-36 items-center justify-center border-b-3 border-border"
-                style={{
-                  background: isSelected
-                    ? "var(--accent)"
-                    : "var(--surface-elevated)",
-                }}
-              >
-                <span
-                  className="text-3xl font-extrabold uppercase tracking-widest opacity-20"
-                  style={{ fontFamily: "var(--font-syne)" }}
-                >
-                  {template.showType === "monologue" ? "SOLO" : "DUO"}
-                </span>
-              </div>
-            )}
+            {template.referenceImageUrl ?
+                (
+                  <div className="border-b-3 border-border">
+                    <img
+                      src={template.referenceImageUrl}
+                      alt={template.name}
+                      className="h-36 w-full object-cover"
+                    />
+                  </div>
+                ) :
+                (
+                  <div
+                    className="flex h-36 items-center justify-center border-b-3 border-border"
+                    style={{
+                      background: isSelected ?
+                        "var(--accent)" :
+                        "var(--surface-elevated)",
+                    }}
+                  >
+                    <span
+                      className="text-3xl font-extrabold uppercase tracking-widest opacity-20"
+                      style={{ fontFamily: "var(--font-syne)" }}
+                    >
+                      {template.showType === "monologue" ? "SOLO" : "DUO"}
+                    </span>
+                  </div>
+                )}
 
             {/* Card body */}
             <div className="p-4">

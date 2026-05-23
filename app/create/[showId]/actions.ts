@@ -6,7 +6,6 @@ import { Pool } from "pg";
 
 import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
-
 import type { GeneratedShow, ShowTemplate } from "@/db/schema";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -23,13 +22,15 @@ export async function getShowWithTemplateAction(showId: string): Promise<ShowWit
       where: eq(schema.generatedShows.id, showId),
     });
 
-    if (!show) return null;
+    if (!show)
+      return null;
 
     const template = await db.query.showTemplates.findFirst({
       where: eq(schema.showTemplates.id, show.templateId),
     });
 
-    if (!template) return null;
+    if (!template)
+      return null;
 
     return { show, template };
   } catch (error) {

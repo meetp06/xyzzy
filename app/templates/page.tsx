@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { asc, count, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import Link from "next/link";
@@ -10,6 +8,8 @@ import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
 
 import { TemplateCard } from "./template-card";
+
+export const dynamic = "force-dynamic";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 const db = drizzle(pool, { schema });
@@ -63,21 +63,23 @@ export default async function TemplatesPage() {
           </div>
 
           {/* Template Grid */}
-          {templates.length === 0 ? (
-            <div className="border-3 border-border p-12 text-center">
-              <p className="text-foreground-muted">No templates yet. Create your first one.</p>
-            </div>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {templates.map(template => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  showCount={countMap.get(template.id) ?? 0}
-                />
-              ))}
-            </div>
-          )}
+          {templates.length === 0 ?
+              (
+                <div className="border-3 border-border p-12 text-center">
+                  <p className="text-foreground-muted">No templates yet. Create your first one.</p>
+                </div>
+              ) :
+              (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {templates.map(template => (
+                    <TemplateCard
+                      key={template.id}
+                      template={template}
+                      showCount={countMap.get(template.id) ?? 0}
+                    />
+                  ))}
+                </div>
+              )}
         </div>
       </main>
     </div>

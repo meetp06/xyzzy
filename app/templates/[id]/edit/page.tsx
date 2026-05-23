@@ -44,7 +44,9 @@ export default async function EditTemplatePage({
               className="text-3xl font-extrabold tracking-tight md:text-4xl"
               style={{ fontFamily: "var(--font-syne)" }}
             >
-              Edit: {template.name}
+              Edit:
+              {" "}
+              {template.name}
             </h2>
           </div>
 

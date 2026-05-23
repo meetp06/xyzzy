@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
 import { recordMetric } from "@/app/lib/metrics";
@@ -7,6 +5,8 @@ import { SearchRateLimitError, searchVideoChunks } from "@/db/search";
 import type { VideoChunkResult } from "@/db/search";
 
 import { SearchResults } from "./search-results";
+
+export const dynamic = "force-dynamic";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

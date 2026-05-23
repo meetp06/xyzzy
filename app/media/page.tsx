@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { desc, count as drizzleCount, eq } from "drizzle-orm";
 import Link from "next/link";
 
@@ -7,6 +5,8 @@ import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
 import { ShowCard } from "@/app/media/show-card";
 import { db, generatedShows, showTemplates } from "@/db";
+
+export const dynamic = "force-dynamic";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants

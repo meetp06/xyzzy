@@ -6,7 +6,6 @@ import { Pool } from "pg";
 
 import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
-
 import type { ChatMessage } from "@/db/schema";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -55,14 +54,13 @@ export async function sendChatMessageAction(
 
   try {
     // Save user message
-    const [savedUserMsg] = await db
+    await db
       .insert(schema.chatMessages)
       .values({
         showId,
         role: "user",
         content: userMessage.trim(),
-      })
-      .returning();
+      });
 
     // Fetch conversation history for context
     const history = await db
@@ -88,42 +86,30 @@ Guidelines:
 - Keep responses concise (2-4 sentences unless more detail is requested)
 - You can reference specific parts of the transcript`;
 
-    const messages = history.map(msg => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    }));
+    // Call Gemini for chat response
+    const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (!apiKey)
+      throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is required");
 
-    // Call MiniMax chat/completions directly
-    const apiKey = env.MINIMAX_API_KEY;
-    if (!apiKey) throw new Error("MINIMAX_API_KEY is required");
-
-    const chatMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
-    ];
-
-    const chatResponse = await fetch("https://api.minimax.io/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "MiniMax-M2.7",
-        messages: chatMessages,
-        temperature: 0.7,
-        max_tokens: 4096,
-      })
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: systemPrompt,
     });
 
-    const chatData = await chatResponse.json();
-    if (!chatResponse.ok) {
-      throw new Error(`MiniMax API error: ${chatData.base_resp?.status_msg || JSON.stringify(chatData)}`);
-    }
+    // Convert history to Gemini format
+    const geminiHistory = history.slice(0, -1).map(msg => ({
+      role: msg.role === "assistant" ? "model" as const : "user" as const,
+      parts: [{ text: msg.content }],
+    }));
 
-    const resultText = chatData.choices?.[0]?.message?.content;
+    const chat = model.startChat({ history: geminiHistory });
+    const chatResult = await chat.sendMessage(userMessage.trim());
+    const resultText = chatResult.response.text();
+
     if (!resultText) {
-      throw new Error("MiniMax returned empty response");
+      throw new Error("Gemini returned empty response");
     }
 
     // Save assistant response

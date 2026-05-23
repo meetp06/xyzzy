@@ -124,7 +124,8 @@ export function ShowCard({ id, topic, templateName, showType, playbackId, durati
               className="border-2 border-border bg-surface px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-foreground-muted"
               style={{ fontFamily: "var(--font-space-mono)" }}
             >
-              {durationSeconds}s
+              {durationSeconds}
+              s
             </span>
           </div>
 

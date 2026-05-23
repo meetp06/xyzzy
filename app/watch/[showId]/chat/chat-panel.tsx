@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
-import { getChatMessagesAction, sendChatMessageAction } from "./actions";
-
 import type { ChatMessage } from "@/db/schema";
+
+import { getChatMessagesAction, sendChatMessageAction } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -41,7 +41,8 @@ export function ChatPanel({ showId, topic, transcript, researchContext }: ChatPa
 
   const handleSend = useCallback(() => {
     const msg = input.trim();
-    if (!msg || isPending) return;
+    if (!msg || isPending)
+      return;
 
     setInput("");
     setError(null);
@@ -110,9 +111,9 @@ export function ChatPanel({ showId, topic, transcript, researchContext }: ChatPa
           >
             <div
               className={`max-w-[85%] border-2 border-border px-3 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-foreground text-surface"
-                  : "bg-surface-elevated text-foreground"
+                msg.role === "user" ?
+                  "bg-foreground text-surface" :
+                  "bg-surface-elevated text-foreground"
               }`}
             >
               {msg.role === "assistant" && (

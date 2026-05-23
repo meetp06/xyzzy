@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { createTemplateAction, updateTemplateAction } from "./actions";
-
 import type { ShowTemplate } from "@/db/schema";
+
+import { createTemplateAction, updateTemplateAction } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -32,13 +32,13 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const existingHosts = template
-    ? (template.hosts as Array<{ name: string; personality?: string; position?: string }>).map(h => ({
+  const existingHosts = template ?
+      (template.hosts as Array<{ name: string; personality?: string; position?: string }>).map(h => ({
         name: h.name,
         personality: h.personality ?? "",
         position: h.position ?? "",
-      }))
-    : [{ ...EMPTY_HOST }];
+      })) :
+      [{ ...EMPTY_HOST }];
 
   const [name, setName] = useState(template?.name ?? "");
   const [showType, setShowType] = useState(template?.showType ?? "monologue");
@@ -79,9 +79,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
     };
 
     startTransition(async () => {
-      const result = isEdit
-        ? await updateTemplateAction(template!.id, data)
-        : await createTemplateAction(data);
+      const result = isEdit ?
+          await updateTemplateAction(template!.id, data) :
+          await createTemplateAction(data);
 
       if (result.error) {
         setError(result.error);
@@ -126,9 +126,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
               type="button"
               onClick={() => setShowType(type)}
               className={`border-3 border-border px-5 py-2 text-sm font-bold uppercase tracking-wider transition-all ${
-                showType === type
-                  ? "bg-accent shadow-[3px_3px_0_var(--border)]"
-                  : "bg-surface hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--border)]"
+                showType === type ?
+                  "bg-accent shadow-[3px_3px_0_var(--border)]" :
+                  "bg-surface hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--border)]"
               }`}
               style={{ fontFamily: "var(--font-space-mono)" }}
             >
@@ -172,7 +172,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
                   className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground-muted"
                   style={{ fontFamily: "var(--font-space-mono)" }}
                 >
-                  Host {i + 1}
+                  Host
+                  {" "}
+                  {i + 1}
                 </span>
                 {hosts.length > 1 && (
                   <button
@@ -214,9 +216,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
                     type="button"
                     onClick={() => updateHost(i, "position", host.position === pos ? "" : pos)}
                     className={`border-2 border-border px-3 py-1 text-xs font-bold uppercase tracking-wider transition-all ${
-                      host.position === pos
-                        ? "bg-accent"
-                        : "bg-surface-elevated hover:bg-surface"
+                      host.position === pos ?
+                        "bg-accent" :
+                        "bg-surface-elevated hover:bg-surface"
                     }`}
                     style={{ fontFamily: "var(--font-space-mono)" }}
                   >

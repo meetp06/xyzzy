@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
@@ -12,6 +10,8 @@ import { db, videos } from "@/db";
 
 import { MediaContent } from "./media-content";
 import { parseVtt } from "./transcript/helpers";
+
+export const dynamic = "force-dynamic";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

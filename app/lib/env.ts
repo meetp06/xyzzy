@@ -1,12 +1,8 @@
 /* eslint-disable node/no-process-env */
 import { z } from "zod";
 
-function optionalString(description: string, message?: string) {
+function optionalString(description: string, _message?: string) {
   return z.string().trim().optional().transform(v => (v === "" ? undefined : v)).describe(description);
-}
-
-function requiredString(description: string, message?: string) {
-  return z.string().trim().min(1, message).describe(description);
 }
 
 const EnvSchema = z.object({
@@ -24,8 +20,8 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: optionalString("OpenAI API key for OpenAI-backed workflows."),
   ANTHROPIC_API_KEY: optionalString("Anthropic API key for Claude-backed workflows."),
 
-  // MiniMax API key (for Video, TTS, and LLM)
-  MINIMAX_API_KEY: optionalString("MiniMax API key for video generation, TTS, and research/scripting."),
+  // Google Gemini API key (for LLM, Video Generation, and TTS)
+  GOOGLE_GENERATIVE_AI_API_KEY: optionalString("Google Generative AI API key for Gemini LLM, Veo video generation, and TTS."),
 
   // ElevenLabs API key (optional; required only if you want to use translateAudio)
   ELEVENLABS_API_KEY: optionalString("ElevenLabs API key for translateAudio workflow."),
@@ -43,7 +39,6 @@ const EnvSchema = z.object({
   // Remotion Lambda (optional; required only if you want to render social clips)
   REMOTION_AWS_ACCESS_KEY_ID: optionalString("Remotion AWS access key ID for rendering social clips."),
   REMOTION_AWS_SECRET_ACCESS_KEY: optionalString("Remotion AWS secret access key for rendering social clips."),
-
 
 });
 

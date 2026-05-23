@@ -18,12 +18,12 @@
     "remotion:deploy": "node remotion/deploy.mjs",
     "visualize:workflows": "npx workflow web",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:minimax": "tsx scripts/test-minimax.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.86",
     "@ai-sdk/openai-compatible": "^2.0.47",
+    "@google/generative-ai": "^0.24.1",
     "@mux/ai": "0.3.1",
     "@mux/mux-node": "^12.8.1",
     "@mux/mux-player-react": "^3.10.1",

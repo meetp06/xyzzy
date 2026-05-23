@@ -77,14 +77,14 @@ REMOTION_AWS_SECRET_ACCESS_KEY=
 
 ## Key Routes
 
-| Route | Description |
-| --- | --- |
-| `/` | Landing page — pitch + how it works |
-| `/create` | Create a new show — pick template, topic, duration |
-| `/create/[showId]` | Generation progress — watch the pipeline run |
-| `/watch/[showId]` | Watch page — video player, transcript, research, chat |
-| `/media` | Browse — previously generated shows |
-| `/templates` | Manage show templates |
+| Route              | Description                                           |
+| ------------------ | ----------------------------------------------------- |
+| `/`                | Landing page — pitch + how it works                   |
+| `/create`          | Create a new show — pick template, topic, duration    |
+| `/create/[showId]` | Generation progress — watch the pipeline run          |
+| `/watch/[showId]`  | Watch page — video player, transcript, research, chat |
+| `/media`           | Browse — previously generated shows                   |
+| `/templates`       | Manage show templates                                 |
 
 ## Project Structure
 

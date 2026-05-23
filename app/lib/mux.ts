@@ -45,7 +45,7 @@ function createMuxClient(): Mux | null {
 const _muxClient = createMuxClient();
 
 /** Get the Mux client, throwing if not configured. */
-function getMux(): Mux {
+export function getMux(): Mux {
   if (!_muxClient) {
     throw new Error("Mux credentials not configured. Set MUX_TOKEN_ID and MUX_TOKEN_SECRET in .env.local");
   }

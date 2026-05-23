@@ -47,10 +47,14 @@ export async function stitchClips(
     console.log("[stitch] Attempting lossless concat to:", output);
     await execFileAsync("ffmpeg", [
       "-y",
-      "-f", "concat",
-      "-safe", "0",
-      "-i", listPath,
-      "-c", "copy",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      listPath,
+      "-c",
+      "copy",
       output,
     ], { timeout: 120_000 });
   } catch (concatErr) {
@@ -58,14 +62,22 @@ export async function stitchClips(
     console.warn("[stitch] Lossless concat failed, falling back to re-encode:", concatErr);
     await execFileAsync("ffmpeg", [
       "-y",
-      "-f", "concat",
-      "-safe", "0",
-      "-i", listPath,
-      "-c:v", "libx264",
-      "-preset", "fast",
-      "-crf", "23",
-      "-c:a", "aac",
-      "-b:a", "128k",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      listPath,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "fast",
+      "-crf",
+      "23",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
       output,
     ], { timeout: 300_000 });
   }
@@ -105,10 +117,14 @@ export async function extractFrame(
   console.log("[stitch] Extracting frame at", timeSeconds, "s from:", videoPath);
   await execFileAsync("ffmpeg", [
     "-y",
-    "-ss", String(timeSeconds),
-    "-i", videoPath,
-    "-frames:v", "1",
-    "-f", "image2",
+    "-ss",
+    String(timeSeconds),
+    "-i",
+    videoPath,
+    "-frames:v",
+    "1",
+    "-f",
+    "image2",
     outputPath,
   ], { timeout: 30_000 });
 
@@ -126,7 +142,8 @@ export async function extractFrame(
 export function cleanupTempFiles(paths: string[]): void {
   for (const p of paths) {
     try {
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      if (fs.existsSync(p))
+        fs.unlinkSync(p);
     } catch {
       // ignore
     }
@@ -154,14 +171,21 @@ export async function overlayAudio(
   try {
     await execFileAsync("ffmpeg", [
       "-y",
-      "-i", videoPath,
-      "-i", audioPath,
-      "-c:v", "copy",          // keep video codec as-is
-      "-c:a", "aac",           // encode audio to AAC
-      "-b:a", "192k",
-      "-map", "0:v:0",         // take video from first input
-      "-map", "1:a:0",         // take audio from second input
-      "-shortest",             // truncate to shorter stream
+      "-i",
+      videoPath,
+      "-i",
+      audioPath,
+      "-c:v",
+      "copy", // keep video codec as-is
+      "-c:a",
+      "aac", // encode audio to AAC
+      "-b:a",
+      "192k",
+      "-map",
+      "0:v:0", // take video from first input
+      "-map",
+      "1:a:0", // take audio from second input
+      "-shortest", // truncate to shorter stream
       output,
     ], { timeout: 120_000 });
   } catch (err) {

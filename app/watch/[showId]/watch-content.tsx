@@ -5,12 +5,11 @@ import Markdown from "react-markdown";
 
 import { PlayerProvider } from "@/app/media/[slug]/player/provider";
 import { VideoPlayer } from "@/app/media/[slug]/player/ui";
+import type { GeneratedShow, ShowTemplate } from "@/db/schema";
 
 import { ChatPanel } from "./chat/chat-panel";
 import { ShowTranscript } from "./show-transcript";
 import { DubbingPanel } from "./tts-panel";
-
-import type { GeneratedShow, ShowTemplate } from "@/db/schema";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -99,7 +98,10 @@ export function WatchContent({ show, template }: WatchContentProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-foreground-muted">Duration</span>
-                <span className="font-bold">{show.durationSeconds}s</span>
+                <span className="font-bold">
+                  {show.durationSeconds}
+                  s
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-foreground-muted">Familiarity</span>

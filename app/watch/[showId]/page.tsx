@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { notFound, redirect } from "next/navigation";
@@ -10,6 +8,8 @@ import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
 
 import { WatchContent } from "./watch-content";
+
+export const dynamic = "force-dynamic";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
 const db = drizzle(pool, { schema });
@@ -66,7 +66,8 @@ export default async function WatchPage({
             </h2>
             <div className="mt-3 flex items-center gap-3">
               <span className="badge" style={{ fontFamily: "var(--font-space-mono)" }}>
-                {show.durationSeconds}s
+                {show.durationSeconds}
+                s
               </span>
               <span className="badge" style={{ fontFamily: "var(--font-space-mono)" }}>
                 {show.familiarity.toUpperCase()}

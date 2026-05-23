@@ -1,7 +1,8 @@
-/* eslint-disable no-console */
-import dotenv from "dotenv";
+/* eslint-disable no-console, node/no-process-env */
 import fs from "node:fs";
 import path from "node:path";
+
+import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
@@ -9,7 +10,8 @@ const VEO_MODEL = "veo-3.1-generate-preview";
 
 function getApiKey(): string {
   const key = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!key) throw new Error("No GEMINI_API_KEY found in .env.local");
+  if (!key)
+    throw new Error("No GEMINI_API_KEY found in .env.local");
   return key;
 }
 

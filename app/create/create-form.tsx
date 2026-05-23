@@ -65,7 +65,8 @@ export function CreateForm({ templates }: CreateFormProps) {
   }
 
   function handleSubmit() {
-    if (!templateId || !topic.trim()) return;
+    if (!templateId || !topic.trim())
+      return;
 
     setError(null);
     startTransition(async () => {
@@ -97,9 +98,9 @@ export function CreateForm({ templates }: CreateFormProps) {
               <div className="flex flex-col items-center">
                 <div
                   className={`flex h-10 w-10 items-center justify-center border-3 border-border text-sm font-extrabold transition-colors ${
-                    step >= s.number
-                      ? "bg-foreground text-surface"
-                      : "bg-surface text-foreground-muted"
+                    step >= s.number ?
+                      "bg-foreground text-surface" :
+                      "bg-surface text-foreground-muted"
                   }`}
                   style={{ fontFamily: "var(--font-space-mono)" }}
                 >
@@ -288,7 +289,8 @@ export function CreateForm({ templates }: CreateFormProps) {
                     Duration
                   </div>
                   <div className="font-bold" style={{ fontFamily: "var(--font-syne)" }}>
-                    {durationSeconds}s
+                    {durationSeconds}
+                    s
                   </div>
                 </div>
                 <div className="border-3 border-border p-4">
@@ -349,27 +351,29 @@ export function CreateForm({ templates }: CreateFormProps) {
         </div>
 
         <div>
-          {step < 4 ? (
-            <button
-              type="button"
-              className="btn-action"
-              style={{ fontFamily: "var(--font-space-mono)" }}
-              disabled={!canAdvance()}
-              onClick={handleNext}
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-action"
-              style={{ fontFamily: "var(--font-space-mono)" }}
-              disabled={isPending}
-              onClick={handleSubmit}
-            >
-              {isPending ? "Creating..." : "Create Show"}
-            </button>
-          )}
+          {step < 4 ?
+              (
+                <button
+                  type="button"
+                  className="btn-action"
+                  style={{ fontFamily: "var(--font-space-mono)" }}
+                  disabled={!canAdvance()}
+                  onClick={handleNext}
+                >
+                  Next
+                </button>
+              ) :
+              (
+                <button
+                  type="button"
+                  className="btn-action"
+                  style={{ fontFamily: "var(--font-space-mono)" }}
+                  disabled={isPending}
+                  onClick={handleSubmit}
+                >
+                  {isPending ? "Creating..." : "Create Show"}
+                </button>
+              )}
         </div>
       </div>
     </div>

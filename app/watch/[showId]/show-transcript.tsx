@@ -43,10 +43,12 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
 
   // Auto-scroll to active segment
   const scrollToActive = useCallback(() => {
-    if (activeIndex < 0 || !containerRef.current) return;
+    if (activeIndex < 0 || !containerRef.current)
+      return;
 
     const el = segRefs.current.get(activeIndex);
-    if (!el) return;
+    if (!el)
+      return;
 
     const container = containerRef.current;
     const containerHeight = container.clientHeight;
@@ -55,7 +57,8 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
     isAutoScrollingRef.current = true;
     container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
 
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    if (scrollTimeoutRef.current)
+      clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       isAutoScrollingRef.current = false;
     }, 600);
@@ -71,11 +74,14 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
 
   // Detect user scroll away from active segment
   const handleScroll = useCallback(() => {
-    if (isAutoScrollingRef.current) return;
-    if (activeIndex < 0 || !containerRef.current) return;
+    if (isAutoScrollingRef.current)
+      return;
+    if (activeIndex < 0 || !containerRef.current)
+      return;
 
     const el = segRefs.current.get(activeIndex);
-    if (!el) return;
+    if (!el)
+      return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
@@ -107,11 +113,13 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
   // Cleanup
   useEffect(() => {
     return () => {
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (scrollTimeoutRef.current)
+        clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
 
-  if (segments.length === 0) return null;
+  if (segments.length === 0)
+    return null;
 
   return (
     <div className="card-brutal relative flex flex-col overflow-hidden">
@@ -136,7 +144,8 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
             <motion.div
               key={i}
               ref={(el) => {
-                if (el) segRefs.current.set(i, el);
+                if (el)
+                  segRefs.current.set(i, el);
                 else segRefs.current.delete(i);
               }}
               onClick={() => handleSegClick(seg)}
@@ -151,9 +160,9 @@ export function ShowTranscript({ segments }: ShowTranscriptProps) {
               className="group relative flex cursor-pointer gap-4 overflow-hidden px-5 py-3"
               initial={false}
               animate={{
-                backgroundColor: activeIndex === i
-                  ? "var(--surface-elevated)"
-                  : "transparent",
+                backgroundColor: activeIndex === i ?
+                  "var(--surface-elevated)" :
+                  "transparent",
               }}
               whileHover={{ backgroundColor: "var(--surface-elevated)" }}
               transition={{ duration: 0.2 }}

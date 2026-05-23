@@ -4,7 +4,6 @@ import type { GenerationStepId } from "@/app/create/[showId]/constants";
 
 import { closeStream, sleepMs, writeToStream } from "./workflow-progress";
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,9 +82,12 @@ export async function generateShowWorkflow(
     for (let i = 0; i < clipIds.length; i++) {
       console.log("[workflow] Generating clip", i + 1, "of", clipIds.length);
       await generateSingleClipStep(
-        showId, clipIds[i],
-        anchorResult.firstFramePath, anchorResult.lastFramePath,
-        anchorResult.useFrameChaining, anchorResult.refImageSlug,
+        showId,
+        clipIds[i],
+        anchorResult.firstFramePath,
+        anchorResult.lastFramePath,
+        anchorResult.useFrameChaining,
+        anchorResult.refImageSlug,
       );
     }
 
@@ -113,7 +115,8 @@ export async function generateShowWorkflow(
     const message = error instanceof Error ? error.message : "Show generation failed";
     const stack = error instanceof Error ? error.stack : undefined;
     console.error("[workflow] FAILED at step after:", completedSteps, "error:", message);
-    if (stack) console.error("[workflow] Stack trace:", stack);
+    if (stack)
+      console.error("[workflow] Stack trace:", stack);
 
     // Mark show as failed in a step (can't use Node.js modules in workflow fn)
     await markFailedStep(showId, message);
@@ -160,7 +163,7 @@ async function researchStep(
 
   const { eq } = await import("drizzle-orm");
   const { db, schema } = await getDb();
-  const { generateText } = await import("@/app/lib/minimax");
+  const { generateText } = await import("@/app/lib/gemini");
 
   await db.update(schema.generatedShows)
     .set({ status: "researching" })
@@ -170,7 +173,8 @@ async function researchStep(
     where: eq(schema.generatedShows.id, showId),
   });
 
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
   console.log("[workflow:research] Show found:", show.id, "topic:", show.topic, "type:", show.topicType);
 
   // Fetch URL content if needed
@@ -193,9 +197,11 @@ async function researchStep(
 Topic: ${topicContent}
 
 Familiarity level: ${show.familiarity} (${
-  show.familiarity === "beginner" ? "Explain everything from scratch" :
-  show.familiarity === "familiar" ? "Assume basic knowledge, focus on interesting details" :
-  "Deep expertise assumed, focus on nuanced insider angles"
+  show.familiarity === "beginner" ?
+    "Explain everything from scratch" :
+    show.familiarity === "familiar" ?
+      "Assume basic knowledge, focus on interesting details" :
+      "Deep expertise assumed, focus on nuanced insider angles"
 })
 
 Provide a comprehensive research brief in 500-1000 words.`;
@@ -224,7 +230,7 @@ async function scriptStep(
 
   const { eq } = await import("drizzle-orm");
   const { db, schema } = await getDb();
-  const { generateText } = await import("@/app/lib/minimax");
+  const { generateText } = await import("@/app/lib/gemini");
 
   await db.update(schema.generatedShows)
     .set({ status: "scripting" })
@@ -233,12 +239,14 @@ async function scriptStep(
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   const template = await db.query.showTemplates.findFirst({
     where: eq(schema.showTemplates.id, show.templateId),
   });
-  if (!template) throw new Error("Template not found");
+  if (!template)
+    throw new Error("Template not found");
 
   const hosts = template.hosts as Array<{ name: string; personality: string; position?: string }>;
   // HARDCODED BUDGET LIMIT: 15 SECONDS MAX
@@ -298,7 +306,8 @@ Format your response as JSON array:
   let segments: TranscriptSegment[];
   try {
     const jsonMatch = scriptResult.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON array found in script output");
+    if (!jsonMatch)
+      throw new Error("No JSON array found in script output");
 
     const parsed = JSON.parse(jsonMatch[0]) as Array<{
       speaker: string;
@@ -354,12 +363,14 @@ async function generateAnchorClipStep(
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   const template = await db.query.showTemplates.findFirst({
     where: eq(schema.showTemplates.id, show.templateId),
   });
-  if (!template) throw new Error("Template not found");
+  if (!template)
+    throw new Error("Template not found");
 
   const refSlug = referenceImageSlug(template.referenceImageUrl);
 
@@ -367,7 +378,7 @@ async function generateAnchorClipStep(
     return { useFrameChaining: false, firstFramePath: null, lastFramePath: null, framingClipPath: null, refImageSlug: refSlug };
   }
 
-  const { generateVideoClip } = await import("@/app/lib/minimax");
+  const { generateVideoClip } = await import("@/app/lib/gemini");
   const { extractFrame } = await import("@/app/lib/stitch");
 
   await writeToStream(progress, { type: "current", step: "frame-chain" });
@@ -419,12 +430,14 @@ async function createClipRecordsStep(
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   const template = await db.query.showTemplates.findFirst({
     where: eq(schema.showTemplates.id, show.templateId),
   });
-  if (!template) throw new Error("Template not found");
+  if (!template)
+    throw new Error("Template not found");
 
   const segments = (show.transcriptSegments ?? []) as TranscriptSegment[];
   const hosts = template.hosts as Array<{ name: string; personality: string; position?: string }>;
@@ -464,22 +477,25 @@ async function generateSingleClipStep(
 
   const { eq } = await import("drizzle-orm");
   const { db, schema } = await getDb();
-  const { generateVideoClip, generateVideoClipInterpolated, VeoRAIFilterError, VeoQuotaExhaustedError } = await import("@/app/lib/minimax");
+  const { generateVideoClip, generateVideoClipInterpolated, VeoRAIFilterError, VeoQuotaExhaustedError } = await import("@/app/lib/gemini");
 
   const clip = await db.query.videoClips.findFirst({
     where: eq(schema.videoClips.id, clipId),
   });
-  if (!clip) throw new Error(`Clip ${clipId} not found`);
+  if (!clip)
+    throw new Error(`Clip ${clipId} not found`);
 
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   const template = await db.query.showTemplates.findFirst({
     where: eq(schema.showTemplates.id, show.templateId),
   });
-  if (!template) throw new Error("Template not found");
+  if (!template)
+    throw new Error("Template not found");
 
   const segments = (show.transcriptSegments ?? []) as TranscriptSegment[];
   const hosts = template.hosts as Array<{ name: string; personality: string; position?: string }>;
@@ -533,15 +549,16 @@ async function generateSingleClipStep(
           currentRefImageSlug = null;
         }
 
-        console.warn("[workflow:generate-clip] Clip", clip.clipIndex,
-          "RAI filtered, revising via Gemini (attempt", attempts, "/", maxRAIRetries, ")");
+        console.warn("[workflow:generate-clip] Clip", clip.clipIndex, "RAI filtered, revising via Gemini (attempt", attempts, "/", maxRAIRetries, ")");
 
         const revisedText = await reviseSegmentText(segment.text, err.reasons);
         console.log("[workflow:generate-clip] Revised text:", revisedText);
 
         currentPrompt = buildVeoPrompt(
           { ...segment, text: revisedText },
-          hosts, template.showType, template.notes ?? "",
+          hosts,
+          template.showType,
+          template.notes ?? "",
         );
 
         segments[clip.clipIndex] = { ...segment, text: revisedText };
@@ -579,7 +596,8 @@ async function finalizeClipsStep(
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   const segments = (show.transcriptSegments ?? []) as TranscriptSegment[];
   const updatedTranscript = segments.map(s => `[${s.speaker}]: ${s.text}`).join("\n\n");
@@ -589,9 +607,12 @@ async function finalizeClipsStep(
 
   // Clean up frame chaining temp files
   const filesToClean: string[] = [];
-  if (anchorResult.framingClipPath) filesToClean.push(anchorResult.framingClipPath);
-  if (anchorResult.firstFramePath) filesToClean.push(anchorResult.firstFramePath);
-  if (anchorResult.lastFramePath) filesToClean.push(anchorResult.lastFramePath);
+  if (anchorResult.framingClipPath)
+    filesToClean.push(anchorResult.framingClipPath);
+  if (anchorResult.firstFramePath)
+    filesToClean.push(anchorResult.firstFramePath);
+  if (anchorResult.lastFramePath)
+    filesToClean.push(anchorResult.lastFramePath);
   if (filesToClean.length > 0) {
     cleanupTempFiles(filesToClean);
   }
@@ -632,7 +653,7 @@ async function reviseSegmentText(
   originalText: string,
   filterReasons: string[],
 ): Promise<string> {
-  const { generateText } = await import("@/app/lib/minimax");
+  const { generateText } = await import("@/app/lib/gemini");
 
   const prompt = `You are revising a line of dialogue for a talk show script. The line was rejected by a video generation AI because it contained words or references that triggered a content filter.
 
@@ -679,9 +700,11 @@ function sanitizeNotesForVeo(notes: string): string {
  * "/templates/john-oliver.png" -> "john-oliver"
  */
 function referenceImageSlug(referenceImageUrl: string | null): string | null {
-  if (!referenceImageUrl) return null;
+  if (!referenceImageUrl)
+    return null;
   const filename = referenceImageUrl.split("/").pop();
-  if (!filename) return null;
+  if (!filename)
+    return null;
   return filename.replace(/\.[^.]+$/, "");
 }
 
@@ -746,10 +769,8 @@ async function stitchStep(
 
   const clipPaths = readyClips.map(c => c.videoUrl!);
   console.log("[workflow:stitch] Stitching paths:", clipPaths);
-  let stitchedPath = await stitchClips(clipPaths);
+  const stitchedPath = await stitchClips(clipPaths);
   console.log("[workflow:stitch] Stitched output:", stitchedPath);
-
-
 
   // Store stitched path temporarily (will be used in upload step)
   await db.update(schema.generatedShows)
@@ -785,12 +806,13 @@ async function uploadStep(
   const show = await db.query.generatedShows.findFirst({
     where: eq(schema.generatedShows.id, showId),
   });
-  if (!show) throw new Error("Show not found");
+  if (!show)
+    throw new Error("Show not found");
 
   // Retrieve stitched path from temporary storage
-  const stitchedPath = show.error?.startsWith("__stitched:")
-    ? show.error.slice("__stitched:".length)
-    : null;
+  const stitchedPath = show.error?.startsWith("__stitched:") ?
+      show.error.slice("__stitched:".length) :
+    null;
 
   if (!stitchedPath) {
     throw new Error("Stitched video path not found");
@@ -807,20 +829,20 @@ async function uploadStep(
 
   if (!isMuxConfigured()) {
     console.log("[workflow:upload] Mux not configured. Serving video locally.");
-    
+
     // Ensure public/files exists
     const publicFilesDir = path.join(process.cwd(), "public", "files");
     if (!fs.existsSync(publicFilesDir)) {
       fs.mkdirSync(publicFilesDir, { recursive: true });
     }
-    
+
     const filename = `show-${showId}.mp4`;
     const destPath = path.join(publicFilesDir, filename);
-    
+
     // Copy the file
     fs.copyFileSync(stitchedPath, destPath);
     console.log(`[workflow:upload] Video copied to ${destPath}`);
-    
+
     await db.update(schema.generatedShows)
       .set({
         status: "ready",

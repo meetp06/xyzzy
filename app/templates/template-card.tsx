@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deleteTemplateAction } from "./actions";
-
 import type { ShowTemplate } from "@/db/schema";
+
+import { deleteTemplateAction } from "./actions";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -34,7 +34,9 @@ export function TemplateCard({ template, showCount }: TemplateCardProps) {
   const hosts = (template.hosts as Host[]) ?? [];
 
   const handleDelete = () => {
-    if (!confirm(`Delete template "${template.name}"?`)) return;
+    // eslint-disable-next-line no-alert
+    if (!confirm(`Delete template "${template.name}"?`))
+      return;
 
     setError(null);
     startTransition(async () => {
@@ -50,24 +52,26 @@ export function TemplateCard({ template, showCount }: TemplateCardProps) {
   return (
     <div className="card-brutal overflow-hidden">
       {/* Image / Placeholder */}
-      {template.referenceImageUrl ? (
-        <div className="border-b-3 border-border">
-          <img
-            src={template.referenceImageUrl}
-            alt={template.name}
-            className="h-36 w-full object-cover"
-          />
-        </div>
-      ) : (
-        <div className="flex h-36 items-center justify-center border-b-3 border-border bg-surface-elevated">
-          <span
-            className="text-3xl font-extrabold uppercase tracking-widest opacity-20"
-            style={{ fontFamily: "var(--font-syne)" }}
-          >
-            {template.showType === "monologue" ? "SOLO" : "DUO"}
-          </span>
-        </div>
-      )}
+      {template.referenceImageUrl ?
+          (
+            <div className="border-b-3 border-border">
+              <img
+                src={template.referenceImageUrl}
+                alt={template.name}
+                className="h-36 w-full object-cover"
+              />
+            </div>
+          ) :
+          (
+            <div className="flex h-36 items-center justify-center border-b-3 border-border bg-surface-elevated">
+              <span
+                className="text-3xl font-extrabold uppercase tracking-widest opacity-20"
+                style={{ fontFamily: "var(--font-syne)" }}
+              >
+                {template.showType === "monologue" ? "SOLO" : "DUO"}
+              </span>
+            </div>
+          )}
 
       {/* Card Body */}
       <div className="p-4">
@@ -101,7 +105,10 @@ export function TemplateCard({ template, showCount }: TemplateCardProps) {
               className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted"
               style={{ fontFamily: "var(--font-space-mono)" }}
             >
-              {showCount} show{showCount !== 1 ? "s" : ""}
+              {showCount}
+              {" "}
+              show
+              {showCount !== 1 ? "s" : ""}
             </span>
           )}
         </div>

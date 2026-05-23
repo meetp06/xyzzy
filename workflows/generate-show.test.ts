@@ -181,7 +181,8 @@ describe("sanitizeNotesForVeo", () => {
 function parseScriptJson(scriptResult: string, hostName: string, clipCount: number): TranscriptSegment[] {
   try {
     const jsonMatch = scriptResult.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON array found in script output");
+    if (!jsonMatch)
+      throw new Error("No JSON array found in script output");
 
     const parsed = JSON.parse(jsonMatch[0]) as Array<{
       speaker: string;

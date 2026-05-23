@@ -99,7 +99,8 @@ export function TVLoading({ templateName, topic, status }: TVLoadingProps) {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx>
+        {`
         @keyframes static {
           0% { transform: translate(0, 0); }
           10% { transform: translate(-5%, -5%); }
@@ -117,7 +118,8 @@ export function TVLoading({ templateName, topic, status }: TVLoadingProps) {
           0%, 80%, 100% { opacity: 0.2; }
           40% { opacity: 1; }
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 }

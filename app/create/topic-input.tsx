@@ -80,7 +80,9 @@ export function TopicInput({ topic, topicType, onTopicChange, onTopicTypeChange 
             className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground-muted"
             style={{ fontFamily: "var(--font-space-mono)" }}
           >
-            Detected: {getTypeLabel(topicType)}
+            Detected:
+            {" "}
+            {getTypeLabel(topicType)}
           </span>
         </div>
       )}

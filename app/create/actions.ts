@@ -6,7 +6,6 @@ import { Pool } from "pg";
 
 import { env } from "@/app/lib/env";
 import * as schema from "@/db/schema";
-
 import type { ShowTemplate } from "@/db/schema";
 
 const pool = new Pool({ connectionString: env.DATABASE_URL });
@@ -89,6 +88,7 @@ export async function createShowAction(formData: CreateShowInput): Promise<Creat
 
     // Start the generation workflow
     try {
+      // eslint-disable-next-line node/no-process-env
       const workflowUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/workflows/generate-show`;
       console.log("[createShowAction] Starting workflow at:", workflowUrl, "showId:", show.id);
 
