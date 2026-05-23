@@ -2,8 +2,6 @@ import "./globals.css";
 
 import { Barlow, Instrument_Serif, Space_Mono } from "next/font/google";
 
-import { VideoBackground } from "@/app/components/video-background";
-
 import type { Metadata } from "next";
 
 const instrumentSerif = Instrument_Serif({
@@ -41,7 +39,6 @@ export default function RootLayout({
         className={`${instrumentSerif.variable} ${barlow.variable} ${spaceMono.variable} antialiased`}
         style={{ fontFamily: "var(--font-barlow), system-ui, sans-serif" }}
       >
-        <VideoBackground />
         {children}
       </body>
     </html>

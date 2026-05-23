@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { Footer } from "@/app/components/footer";
 import { Header } from "@/app/components/header";
+import { VideoBackground } from "@/app/components/video-background";
 
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
+      <VideoBackground />
       <Header currentPath="/" />
 
       <section className="relative z-10 flex h-screen min-h-[760px] w-full flex-col justify-between px-10 pt-[160px] pb-12">

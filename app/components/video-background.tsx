@@ -19,7 +19,8 @@ export function VideoBackground() {
 
     let capturing = true;
     let lastTime = -1;
-    const MAX_WIDTH = 960;
+    // Smaller canvas = much faster capture + less memory; still looks fine fullscreen.
+    const MAX_WIDTH = 640;
     const frames: HTMLCanvasElement[] = [];
     let rafId = 0;
 
@@ -163,11 +164,15 @@ export function VideoBackground() {
       aria-hidden="true"
       style={{ filter: "saturate(1.15) contrast(1.05)" }}
     >
+      {/* Live video element is always rendered. It plays immediately on first
+          paint (no wait for full capture). When the boomerang canvas is ready,
+          we hide the live video and let the canvas take over. */}
       <video
         ref={videoRef}
         src={VIDEO_SRC}
         muted
         playsInline
+        autoPlay
         preload="auto"
         crossOrigin="anonymous"
         className="h-full w-full object-cover"
