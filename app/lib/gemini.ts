@@ -213,10 +213,13 @@ async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResul
     durationSeconds: options.durationSeconds ?? 8,
     resolution: options.resolution ?? "1080p",
     personGeneration: PersonGeneration.ALLOW_ADULT,
-    generateAudio: options.generateAudio ?? true,
-    enhancePrompt: options.enhancePrompt ?? true,
     negativePrompt: options.negativePrompt ?? DEFAULT_NEGATIVE_PROMPT,
   };
+
+  // generateAudio + enhancePrompt only supported on Vertex AI (Enterprise Agent Platform),
+  // not the Gemini Developer API. Only set when explicitly passed.
+  if (options.generateAudio !== undefined) config.generateAudio = options.generateAudio;
+  if (options.enhancePrompt !== undefined) config.enhancePrompt = options.enhancePrompt;
 
   let firstFrameImage: Image | undefined;
   if (options.firstFrame) {
