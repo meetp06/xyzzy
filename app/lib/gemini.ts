@@ -119,10 +119,13 @@ async function pollVeoOperation(operationName: string, apiKey: string): Promise<
       }
 
       // Check for RAI filtering
-      const video = data.response?.generatedVideos?.[0];
-      if (!video?.video?.uri) {
+      const videoUri = data.response?.generatedVideos?.[0]?.video?.uri ||
+                       data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+      if (!videoUri) {
         const filterReasons = data.response?.raiMediaFilteredReasons ||
           data.response?.generatedVideos?.[0]?.raiMediaFilteredReasons ||
+          data.response?.generateVideoResponse?.raiMediaFilteredReasons ||
+          data.response?.generateVideoResponse?.generatedSamples?.[0]?.raiMediaFilteredReasons ||
           [];
         if (filterReasons.length > 0) {
           throw new VeoRAIFilterError(filterReasons);
@@ -130,7 +133,7 @@ async function pollVeoOperation(operationName: string, apiKey: string): Promise<
         throw new Error(`Veo returned no video: ${JSON.stringify(data.response)}`);
       }
 
-      return video.video.uri;
+      return videoUri;
     }
   }
 }
@@ -189,7 +192,7 @@ export async function generateVideoClip(
   }
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/veo-2:predictLongRunning?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -251,7 +254,7 @@ export async function generateVideoClipInterpolated(
   };
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/veo-2:predictLongRunning?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
