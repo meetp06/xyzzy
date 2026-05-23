@@ -18,7 +18,7 @@ export default async function CreatePage() {
               className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-foreground-muted"
               style={{ fontFamily: "var(--font-space-mono)" }}
             >
-              Interdimensional Cable
+              Scripted
             </p>
             <h2
               className="text-4xl font-extrabold tracking-tight md:text-5xl"

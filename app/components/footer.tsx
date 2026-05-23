@@ -42,7 +42,7 @@ export function Footer({ variant = "minimal" }: FooterProps) {
     <footer className="relative z-20 mt-auto flex flex-col items-center gap-4 border-t border-white/5 bg-black/40 py-10 text-center backdrop-blur-3xl">
       <LogoMark />
       <p className="text-xs font-light text-white/40">
-        © 2026 Interdimensional Cable
+        © 2026 Scripted
       </p>
       <div className="flex items-center gap-6">
         <Link href="/" className="text-xs font-light text-white/40 hover:text-white">Home</Link>

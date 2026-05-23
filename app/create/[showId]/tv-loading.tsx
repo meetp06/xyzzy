@@ -85,7 +85,7 @@ export function TVLoading({ templateName, topic, status }: TVLoadingProps) {
             className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground-light"
             style={{ fontFamily: "var(--font-space-mono)" }}
           >
-            Interdimensional Cable
+            Scripted
           </div>
           <div className="flex items-center gap-2">
             <div className={`h-2 w-2 ${isActive ? "animate-pulse bg-accent" : status === "ready" ? "bg-green-500" : "bg-red-500"}`} />

@@ -11,7 +11,7 @@ export default function Home() {
       <section className="relative z-10 flex h-screen min-h-[760px] w-full flex-col justify-between px-10 pt-[160px] pb-12">
         {/* Hero title */}
         <div className="flex w-full justify-center">
-          <h1 className="hero-title select-none drop-shadow-2xl">Interdimensional Cable</h1>
+          <h1 className="hero-title select-none drop-shadow-2xl">Scripted</h1>
         </div>
 
         {/* Bottom row */}

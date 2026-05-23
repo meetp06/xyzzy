@@ -211,7 +211,7 @@ async function downloadVideoFile(
 ): Promise<VideoClipResult> {
   if (!videoFile) throw new Error("Veo returned no video file reference");
 
-  const tmpDir = path.join(os.tmpdir(), "interdimensional-cable");
+  const tmpDir = path.join(os.tmpdir(), "scripted");
   fs.mkdirSync(tmpDir, { recursive: true });
   const fileName = `clip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp4`;
   const localPath = path.join(tmpDir, fileName);

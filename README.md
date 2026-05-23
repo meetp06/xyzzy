@@ -1,4 +1,4 @@
-# Interdimensional Cable
+# Scripted
 
 AI-generated talk shows — pick a late-night format, give it any topic, and watch a full episode come to life in seconds.
 

@@ -30,7 +30,7 @@ export async function stitchClips(
     return dest;
   }
 
-  const tmpDir = path.join(os.tmpdir(), "interdimensional-cable");
+  const tmpDir = path.join(os.tmpdir(), "scripted");
   fs.mkdirSync(tmpDir, { recursive: true });
 
   // Write concat list file
@@ -93,7 +93,7 @@ export async function stitchClips(
 }
 
 function generateOutputPath(): string {
-  const tmpDir = path.join(os.tmpdir(), "interdimensional-cable");
+  const tmpDir = path.join(os.tmpdir(), "scripted");
   fs.mkdirSync(tmpDir, { recursive: true });
   return path.join(tmpDir, `stitched-${Date.now()}.mp4`);
 }
@@ -109,7 +109,7 @@ export async function extractFrame(
   videoPath: string,
   timeSeconds: number,
 ): Promise<string> {
-  const tmpDir = path.join(os.tmpdir(), "interdimensional-cable");
+  const tmpDir = path.join(os.tmpdir(), "scripted");
   fs.mkdirSync(tmpDir, { recursive: true });
 
   const outputPath = path.join(tmpDir, `frame-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.png`);
