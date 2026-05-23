@@ -30,6 +30,7 @@ export function CreateForm({ templates }: CreateFormProps) {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
   const [topicType, setTopicType] = useState("freetext");
+  const [topicContext, setTopicContext] = useState("");
   const [durationSeconds, setDurationSeconds] = useState(16);
   const [familiarity, setFamiliarity] = useState("familiar");
   const [useFrameChaining, setUseFrameChaining] = useState(false);
@@ -69,10 +70,13 @@ export function CreateForm({ templates }: CreateFormProps) {
       return;
 
     setError(null);
+    const finalTopic = topicContext.trim()
+      ? `${topic.trim()}\n\nAdditional context from user: ${topicContext.trim()}`
+      : topic.trim();
     startTransition(async () => {
       const result = await createShowAction({
         templateId,
-        topic: topic.trim(),
+        topic: finalTopic,
         topicType,
         durationSeconds,
         familiarity,
@@ -158,8 +162,11 @@ export function CreateForm({ templates }: CreateFormProps) {
             <TopicInput
               topic={topic}
               topicType={topicType}
+              context={topicContext}
+              templateName={selectedTemplate?.name}
               onTopicChange={setTopic}
               onTopicTypeChange={setTopicType}
+              onContextChange={setTopicContext}
             />
           </div>
         )}

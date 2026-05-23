@@ -30,6 +30,37 @@ export async function getTemplatesAction(): Promise<ShowTemplate[]> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Suggest Topic (AI-generated)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface SuggestTopicResult {
+  topic?: string;
+  error?: string;
+}
+
+export async function suggestTopicAction(templateName?: string): Promise<SuggestTopicResult> {
+  try {
+    const { generateText } = await import("@/app/lib/gemini");
+    const hostHint = templateName ? `The host is "${templateName}". ` : "";
+    const prompt = `${hostHint}Suggest ONE original, current, interesting topic for a short talk-show monologue. The topic should be specific enough to research and discuss for 30-60 seconds.
+
+Rules:
+- Return ONLY the topic itself as a single sentence (10-25 words).
+- No quote marks. No prefix like "Topic:" or numbering.
+- Avoid celebrity names, politicians, or recent breaking news that may be outdated.
+- Prefer evergreen but interesting subjects: tech trends, cultural observations, science curiosities, business shifts, everyday absurdities.
+- Be specific, not generic. ("Why grocery store self-checkouts are quietly disappearing" beats "Self-checkout machines".)`;
+
+    const topic = await generateText(prompt, "You are an editor pitching talk-show segments. Output only the topic line.");
+    return { topic: topic.trim().replace(/^["']|["']$/g, "") };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to suggest topic";
+    console.error("[suggestTopicAction]", message);
+    return { error: message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Create Show
 // ─────────────────────────────────────────────────────────────────────────────
 
