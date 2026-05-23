@@ -200,6 +200,7 @@ interface VeoCallOptions {
   resolution?: "720p" | "1080p";
   generateAudio?: boolean;
   enhancePrompt?: boolean;
+  personGeneration?: PersonGeneration | string;
 }
 
 const DEFAULT_NEGATIVE_PROMPT = "low quality, blurry, distorted face, mangled hands, extra limbs, watermark, on-screen text, subtitles, captions, jittery motion, flicker, oversaturated, plastic skin, deformed mouth, lip-sync drift";
@@ -212,12 +213,13 @@ async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResul
     numberOfVideos: 1,
     durationSeconds: options.durationSeconds ?? 8,
     resolution: options.resolution ?? "1080p",
-    personGeneration: PersonGeneration.ALLOW_ADULT,
   };
 
-  // generateAudio + enhancePrompt + negativePrompt are Vertex-AI-only
-  // (Gemini Developer API rejects them with 400 INVALID_ARGUMENT).
+  // The following params are Vertex-AI-only on Veo 3.1 preview
+  // (Gemini Developer API rejects with 400 INVALID_ARGUMENT):
+  // personGeneration (allow_adult), generateAudio, enhancePrompt, negativePrompt.
   // Only set when explicitly passed.
+  if (options.personGeneration !== undefined) config.personGeneration = options.personGeneration;
   if (options.generateAudio !== undefined) config.generateAudio = options.generateAudio;
   if (options.enhancePrompt !== undefined) config.enhancePrompt = options.enhancePrompt;
   if (options.negativePrompt !== undefined) config.negativePrompt = options.negativePrompt;
