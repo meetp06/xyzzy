@@ -135,6 +135,7 @@ scripts/                # seed-templates.ts, import-mux-assets.ts, ...
 public/templates/       # Imagen-generated host portraits (committed)
 public/uploads/         # User-uploaded reference images (runtime)
 public/files/           # Stitched output MP4s (when Mux isn't configured)
+managed-agents/         # Google Antigravity SDK stateful agents for GCE Linux
 ```
 
 ## Useful scripts
@@ -153,6 +154,30 @@ npm run remotion:studio   # Remotion Studio (http://localhost:5432)
 npm run remotion:deploy   # Deploy Remotion to AWS Lambda
 ```
 
+## Managed State Agents (Google Antigravity SDK)
+
+To facilitate codebase-wide operations in our target **Google Cloud Linux (GCE)** environments, we use Google Antigravity Managed State Agents. These run statefully, allowing us to interact with the environment, execute commands, analyze code changes, and manage deployments.
+
+The reference agents are located under [`managed-agents`](file:///Users/meet/Desktop/may16/adstalk/managed-agents):
+
+1. **Code Reviewer Agent ([`code_reviewer.py`](file:///Users/meet/Desktop/may16/adstalk/managed-agents/code_reviewer.py))**: Stateful agent that monitors files, checks TypeScript code, and executes lint scripts.
+2. **DevOps Deployment Agent ([`deployer.py`](file:///Users/meet/Desktop/may16/adstalk/managed-agents/deployer.py))**: Runs directly on GCE Linux VMs to pull git changes, build, and restart system services.
+3. **Content Curator Agent ([`content_curator.py`](file:///Users/meet/Desktop/may16/adstalk/managed-agents/content_curator.py))**: Fetches trending topics and pre-saves generated monologue scripts into the Postgres database.
+
+### Running on Google Cloud Linux
+
+Configure your GCE Linux environment variables (`WORKSPACE_DIR`, `GEMINI_API_KEY`) and run:
+
+```bash
+# Set workspace environment variable
+export WORKSPACE_DIR="/opt/app/adstalk"
+
+# Run any of the managed state agents
+python3 managed-agents/code_reviewer.py
+python3 managed-agents/deployer.py
+python3 managed-agents/content_curator.py
+```
+
 ## Notes on the Veo path
 
 - **Models:** default `veo-3.1-generate-preview`. Same model for reference image and first/last-frame interpolation.
@@ -168,3 +193,4 @@ npm test
 ```
 
 Vitest covers `gemini.ts` (text gen, Veo wrapper, RAI handling, chat reply, withRetry) and the workflow's script-JSON parser.
+

@@ -58,3 +58,11 @@ next-env.d.ts
 
 # generated video files
 /public/files/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
