@@ -185,6 +185,15 @@ async function researchStep(
   const { db, schema } = await getDb();
   const { generateText } = await import("@/app/lib/gemini");
 
+  const showEarly = await db.query.generatedShows.findFirst({
+    where: eq(schema.generatedShows.id, showId),
+  });
+  if (showEarly?.transcript && showEarly?.transcriptSegments) {
+    console.log("[workflow:research] User-supplied transcript present — skipping research step");
+    await writeToStream(progress, { type: "completed", step: "research" });
+    return;
+  }
+
   await db.update(schema.generatedShows)
     .set({ status: "researching" })
     .where(eq(schema.generatedShows.id, showId));
@@ -263,6 +272,14 @@ async function scriptStep(
   });
   if (!show)
     throw new Error("Show not found");
+
+  // If user supplied a verbatim script at creation, skip Gemini scripting entirely.
+  const existingSegs = (show.transcriptSegments ?? []) as TranscriptSegment[];
+  if (show.transcript && existingSegs.length > 0) {
+    console.log("[workflow:script] User-supplied transcript present (", existingSegs.length, "segments) — skipping script step");
+    await writeToStream(progress, { type: "completed", step: "script" });
+    return;
+  }
 
   const template = await db.query.showTemplates.findFirst({
     where: eq(schema.showTemplates.id, show.templateId),

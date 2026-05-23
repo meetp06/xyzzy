@@ -31,6 +31,8 @@ export function CreateForm({ templates }: CreateFormProps) {
   const [topic, setTopic] = useState("");
   const [topicType, setTopicType] = useState("freetext");
   const [topicContext, setTopicContext] = useState("");
+  const [userScript, setUserScript] = useState("");
+  const [scriptMode, setScriptMode] = useState<"ai" | "user">("ai");
   const [durationSeconds, setDurationSeconds] = useState(16);
   const [familiarity, setFamiliarity] = useState("familiar");
   const [useFrameChaining, setUseFrameChaining] = useState(false);
@@ -43,7 +45,9 @@ export function CreateForm({ templates }: CreateFormProps) {
       case 1:
         return templateId !== null;
       case 2:
-        return topic.trim().length > 0;
+        return scriptMode === "ai"
+          ? topic.trim().length > 0
+          : userScript.trim().split(/\s+/).filter(Boolean).length >= 5;
       case 3:
         return true;
       default:
@@ -66,13 +70,16 @@ export function CreateForm({ templates }: CreateFormProps) {
   }
 
   function handleSubmit() {
-    if (!templateId || !topic.trim())
-      return;
+    if (!templateId) return;
+    if (scriptMode === "ai" && !topic.trim()) return;
+    if (scriptMode === "user" && userScript.trim().split(/\s+/).filter(Boolean).length < 5) return;
 
     setError(null);
-    const finalTopic = topicContext.trim()
-      ? `${topic.trim()}\n\nAdditional context from user: ${topicContext.trim()}`
-      : topic.trim();
+    const finalTopic = scriptMode === "user"
+      ? (topic.trim() || "(user-supplied script)")
+      : topicContext.trim()
+        ? `${topic.trim()}\n\nAdditional context from user: ${topicContext.trim()}`
+        : topic.trim();
     startTransition(async () => {
       const result = await createShowAction({
         templateId,
@@ -81,6 +88,7 @@ export function CreateForm({ templates }: CreateFormProps) {
         durationSeconds,
         familiarity,
         useFrameChaining,
+        userScript: scriptMode === "user" ? userScript.trim() : undefined,
       });
 
       if (result.error) {
@@ -163,10 +171,15 @@ export function CreateForm({ templates }: CreateFormProps) {
               topic={topic}
               topicType={topicType}
               context={topicContext}
+              userScript={userScript}
+              scriptMode={scriptMode}
               templateName={selectedTemplate?.name}
+              durationSeconds={durationSeconds}
               onTopicChange={setTopic}
               onTopicTypeChange={setTopicType}
               onContextChange={setTopicContext}
+              onUserScriptChange={setUserScript}
+              onScriptModeChange={setScriptMode}
             />
           </div>
         )}

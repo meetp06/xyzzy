@@ -71,6 +71,38 @@ interface CreateShowInput {
   durationSeconds: number;
   familiarity: string;
   useFrameChaining?: boolean;
+  /** When set, skip AI research+script and use this verbatim as the spoken transcript. */
+  userScript?: string;
+}
+
+interface UserSegment {
+  speaker: string;
+  text: string;
+  startTime: number;
+  endTime: number;
+  clipIndex?: number;
+}
+
+/**
+ * Splits raw user-supplied script text into N evenly-sized 8-second clip segments.
+ * Splits on word boundaries; trims; uses the template's first host name as speaker.
+ */
+function splitScriptIntoSegments(script: string, clipCount: number, speaker: string): UserSegment[] {
+  const words = script.trim().split(/\s+/).filter(Boolean);
+  const wordsPerClip = Math.max(1, Math.ceil(words.length / clipCount));
+  const segments: UserSegment[] = [];
+  for (let i = 0; i < clipCount; i++) {
+    const slice = words.slice(i * wordsPerClip, (i + 1) * wordsPerClip).join(" ");
+    if (!slice) break;
+    segments.push({
+      speaker,
+      text: slice,
+      startTime: i * 8,
+      endTime: (i + 1) * 8,
+      clipIndex: i,
+    });
+  }
+  return segments;
 }
 
 interface CreateShowResult {
@@ -104,6 +136,21 @@ export async function createShowAction(formData: CreateShowInput): Promise<Creat
   }
 
   try {
+    // If user supplied a script, pre-populate transcript + segments so the
+    // workflow short-circuits research + scripting steps.
+    let preTranscript: string | undefined;
+    let preSegments: UserSegment[] | undefined;
+    if (formData.userScript && formData.userScript.trim().length > 0) {
+      const template = await db.query.showTemplates.findFirst({
+        where: eq(schema.showTemplates.id, formData.templateId),
+      });
+      const hosts = (template?.hosts as Array<{ name: string }>) ?? [];
+      const speaker = hosts[0]?.name ?? "Host";
+      const clipCount = Math.max(1, Math.round(formData.durationSeconds / 8));
+      preSegments = splitScriptIntoSegments(formData.userScript, clipCount, speaker);
+      preTranscript = preSegments.map(s => `[${s.speaker}]: ${s.text}`).join("\n\n");
+    }
+
     const [show] = await db
       .insert(schema.generatedShows)
       .values({
@@ -114,6 +161,7 @@ export async function createShowAction(formData: CreateShowInput): Promise<Creat
         familiarity: formData.familiarity,
         useFrameChaining: formData.useFrameChaining ?? false,
         status: "pending",
+        ...(preTranscript ? { transcript: preTranscript, transcriptSegments: preSegments } : {}),
       })
       .returning({ id: schema.generatedShows.id });
 
