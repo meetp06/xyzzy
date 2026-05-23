@@ -249,9 +249,10 @@ async function scriptStep(
     throw new Error("Template not found");
 
   const hosts = template.hosts as Array<{ name: string; personality: string; position?: string }>;
-  // HARDCODED BUDGET LIMIT: 15 SECONDS MAX
-  const durationSec = 15; // show.durationSeconds;
-  const clipCount = 1; // Reduced to 1 to conserve Veo quota (10 RPD limit)
+  // Veo caps per-clip at 8s. Derive clip count from the user-selected duration.
+  const SECONDS_PER_CLIP = 8;
+  const durationSec = show.durationSeconds;
+  const clipCount = Math.max(1, Math.round(durationSec / SECONDS_PER_CLIP));
 
   let scriptPrompt: string;
 
@@ -372,7 +373,8 @@ async function generateAnchorClipStep(
   if (!template)
     throw new Error("Template not found");
 
-  const refSlug = referenceImageSlug(template.referenceImageUrl);
+  // Pass the full URL/path through — the gemini loader resolves http(s), /public paths, and slugs.
+  const refSlug = template.referenceImageUrl ?? null;
 
   if (!show.useFrameChaining) {
     return { useFrameChaining: false, firstFramePath: null, lastFramePath: null, framingClipPath: null, refImageSlug: refSlug };

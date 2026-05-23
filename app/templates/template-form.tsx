@@ -46,6 +46,25 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const [notes, setNotes] = useState(template?.notes ?? "");
   const [isDefault, setIsDefault] = useState(template?.isDefault ?? false);
   const [hosts, setHosts] = useState<Host[]>(existingHosts);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFileUpload = async (file: File) => {
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? `Upload failed (${res.status})`);
+      setReferenceImageUrl(body.url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const isEdit = Boolean(template);
 
@@ -138,22 +157,71 @@ export function TemplateForm({ template }: TemplateFormProps) {
         </div>
       </div>
 
-      {/* Reference Image URL */}
+      {/* Reference Image — upload or URL */}
       <div>
         <label
           className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-foreground-muted"
           style={{ fontFamily: "var(--font-space-mono)" }}
         >
-          Reference Image URL
+          Reference Image (Person photo)
         </label>
-        <input
-          type="text"
-          value={referenceImageUrl}
-          onChange={e => setReferenceImageUrl(e.target.value)}
-          placeholder="https://..."
-          className="w-full border-3 border-border bg-surface p-4 text-base text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-accent"
-          style={{ fontFamily: "var(--font-space-mono)" }}
-        />
+
+        <div className="space-y-2">
+          {referenceImageUrl && (
+            <div className="flex items-center gap-3 border-2 border-border bg-surface-elevated p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={referenceImageUrl}
+                alt="Reference"
+                className="h-16 w-16 border border-border object-cover"
+              />
+              <span className="flex-1 truncate text-xs" style={{ fontFamily: "var(--font-space-mono)" }}>
+                {referenceImageUrl}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReferenceImageUrl("")}
+                className="text-xs font-bold uppercase text-red-600 hover:underline"
+                style={{ fontFamily: "var(--font-space-mono)" }}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleFileUpload(f);
+              e.target.value = "";
+            }}
+            className="block w-full text-sm file:mr-3 file:border-2 file:border-border file:bg-accent file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-wider"
+            style={{ fontFamily: "var(--font-space-mono)" }}
+          />
+
+          <input
+            type="text"
+            value={referenceImageUrl}
+            onChange={e => setReferenceImageUrl(e.target.value)}
+            placeholder="Or paste URL: https://... or /templates/john-oliver.png"
+            className="w-full border-3 border-border bg-surface p-4 text-base text-foreground placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-accent"
+            style={{ fontFamily: "var(--font-space-mono)" }}
+          />
+
+          {uploading && (
+            <p className="text-xs text-foreground-muted" style={{ fontFamily: "var(--font-space-mono)" }}>
+              Uploading...
+            </p>
+          )}
+          {uploadError && (
+            <p className="text-xs text-red-600" style={{ fontFamily: "var(--font-space-mono)" }}>
+              {uploadError}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Hosts */}

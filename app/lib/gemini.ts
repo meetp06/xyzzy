@@ -127,24 +127,71 @@ export class VeoRAIFilterError extends Error {
   }
 }
 
-function loadReferenceImageBase64(slug: string): { base64: string; mimeType: string } | null {
-  const baseDir = path.join(process.cwd(), "assets", "reference-images");
-  const extensions = [".png", ".jpeg", ".jpg", ".webp"];
+function mimeFromExt(ext: string): string {
+  const e = ext.toLowerCase();
+  if (e === ".jpg" || e === ".jpeg") return "image/jpeg";
+  if (e === ".webp") return "image/webp";
+  if (e === ".gif") return "image/gif";
+  return "image/png";
+}
 
-  for (const ext of extensions) {
-    const candidate = path.join(baseDir, `${slug}${ext}`);
-    if (fs.existsSync(candidate)) {
-      const mimeType = ext === ".jpg" || ext === ".jpeg"
-        ? "image/jpeg"
-        : ext === ".webp"
-          ? "image/webp"
-          : "image/png";
-      const base64 = fs.readFileSync(candidate).toString("base64");
-      return { base64, mimeType };
+async function loadReferenceImageBase64(
+  source: string,
+): Promise<{ base64: string; mimeType: string } | null> {
+  // 1. Remote URL: fetch bytes
+  if (/^https?:\/\//i.test(source)) {
+    try {
+      const res = await withRetry(() => fetch(source), { label: "ref image fetch" });
+      if (!res.ok) {
+        console.warn("[gemini] Reference image fetch failed:", res.status, source);
+        return null;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      const contentType = res.headers.get("content-type") ?? "";
+      const mimeType = contentType.startsWith("image/")
+        ? contentType.split(";")[0]
+        : mimeFromExt(path.extname(new URL(source).pathname));
+      return { base64: buf.toString("base64"), mimeType };
+    } catch (err) {
+      console.warn("[gemini] Reference image fetch threw:", err instanceof Error ? err.message : err);
+      return null;
     }
   }
 
-  console.warn("[gemini] Reference image not found for slug:", slug);
+  // 2. Path starting with "/" (relative to /public) — covers uploaded files
+  if (source.startsWith("/")) {
+    const publicCandidate = path.join(process.cwd(), "public", source);
+    if (fs.existsSync(publicCandidate)) {
+      return {
+        base64: fs.readFileSync(publicCandidate).toString("base64"),
+        mimeType: mimeFromExt(path.extname(publicCandidate)),
+      };
+    }
+  }
+
+  // 3. Absolute local path
+  if (path.isAbsolute(source) && fs.existsSync(source)) {
+    return {
+      base64: fs.readFileSync(source).toString("base64"),
+      mimeType: mimeFromExt(path.extname(source)),
+    };
+  }
+
+  // 4. Slug → assets/reference-images/{slug}.{ext}
+  const baseDir = path.join(process.cwd(), "assets", "reference-images");
+  const slug = source.replace(/\.[^.]+$/, "").split("/").pop() ?? source;
+  const extensions = [".png", ".jpeg", ".jpg", ".webp"];
+  for (const ext of extensions) {
+    const candidate = path.join(baseDir, `${slug}${ext}`);
+    if (fs.existsSync(candidate)) {
+      return {
+        base64: fs.readFileSync(candidate).toString("base64"),
+        mimeType: mimeFromExt(ext),
+      };
+    }
+  }
+
+  console.warn("[gemini] Reference image not found for source:", source);
   return null;
 }
 
@@ -306,10 +353,15 @@ async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResul
 
 export async function generateVideoClip(
   prompt: string,
-  referenceImageSlug?: string,
+  referenceImageSource?: string,
 ): Promise<VideoClipResult> {
-  console.log("[gemini] generateVideoClip called, prompt length:", prompt.length);
-  const referenceImage = referenceImageSlug ? loadReferenceImageBase64(referenceImageSlug) ?? undefined : undefined;
+  console.log("[gemini] generateVideoClip called, prompt length:", prompt.length, "ref:", referenceImageSource ?? "<none>");
+  const referenceImage = referenceImageSource
+    ? (await loadReferenceImageBase64(referenceImageSource)) ?? undefined
+    : undefined;
+  if (referenceImageSource && !referenceImage) {
+    console.warn("[gemini] Reference image requested but could not be loaded, proceeding without it:", referenceImageSource);
+  }
   return generateVeoVideo({ prompt, referenceImage });
 }
 
