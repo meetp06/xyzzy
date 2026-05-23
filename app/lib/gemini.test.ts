@@ -62,7 +62,7 @@ describe("gemini", () => {
       expect(result).toBe("Generated response text");
       expect(mockGenerateContent).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           contents: "test prompt",
         }),
       );
@@ -111,7 +111,7 @@ describe("gemini", () => {
 
       expect(mockGenerateVideos).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "veo-3.0-generate-001",
+          model: "veo-3.1-generate-preview",
           prompt: "A test video prompt",
         }),
       );
@@ -152,7 +152,7 @@ describe("gemini", () => {
       expect(reply).toBe("chat reply");
       expect(mockChatsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           config: { systemInstruction: "be helpful" },
           history: [
             { role: "user", parts: [{ text: "hello" }] },

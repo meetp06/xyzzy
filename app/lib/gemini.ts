@@ -17,8 +17,8 @@ import { env } from "./env";
 // Model selection
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TEXT_MODEL = "gemini-2.5-flash";
-const VEO_MODEL_DEFAULT = "veo-3.0-generate-001";
+const TEXT_MODEL = "gemini-3.5-flash";
+const VEO_MODEL_DEFAULT = "veo-3.1-generate-preview";
 const VEO_MODEL_REFERENCE = "veo-3.1-generate-preview";
 const VEO_MODEL_INTERPOLATION = "veo-3.1-generate-preview";
 
