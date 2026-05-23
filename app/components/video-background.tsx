@@ -159,8 +159,9 @@ export function VideoBackground() {
   return (
     <div
       ref={videoBgRef}
-      className="pointer-events-none fixed inset-0 -z-10 -ml-4 -mt-4 origin-center scale-[1.08]"
-      aria-hidden
+      className="pointer-events-none fixed inset-0 z-0 -ml-4 -mt-4 origin-center scale-[1.08]"
+      aria-hidden="true"
+      style={{ filter: "saturate(1.15) contrast(1.05)" }}
     >
       <video
         ref={videoRef}
@@ -177,8 +178,15 @@ export function VideoBackground() {
         className="h-full w-full object-cover"
         style={{ display: framesReady ? "block" : "none" }}
       />
-      {/* Slight dark overlay so foreground content stays readable */}
-      <div className="absolute inset-0 bg-black/40 mix-blend-multiply" />
+      {/* Soft top/bottom vignette so nav + footer text stay legible without
+          killing the video. The middle is mostly transparent so the video pops. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.05) 75%, rgba(0,0,0,0.55) 100%)",
+        }}
+      />
     </div>
   );
 }

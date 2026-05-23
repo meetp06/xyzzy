@@ -45,12 +45,20 @@
   --font-dirtyline: "Dirtyline", sans-serif;
 }
 
-html, body {
+html {
   background: #000;
+}
+body {
+  background: transparent;
   color: var(--foreground);
   font-family: "Barlow", system-ui, sans-serif;
   line-height: 1.4;
   min-height: 100vh;
+}
+/* Every page-level child sits above the fixed video background */
+body > :not([aria-hidden="true"]) {
+  position: relative;
+  z-index: 10;
 }
 
 /* The cinematic gradient is gone — VideoBackground component renders behind
