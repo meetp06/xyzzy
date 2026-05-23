@@ -22,13 +22,13 @@ export function Footer({ variant = "minimal" }: FooterProps) {
         <LogoMark />
         <div className="flex flex-wrap items-center justify-center gap-6 opacity-70">
           <a href="https://gemini.google.com/" target="_blank" rel="noreferrer" aria-label="Google Gemini">
-            <Image src="/gemini-logo-white.svg" alt="Google Gemini" width={120} height={24} style={{ height: "24px", width: "auto" }} />
+            <Image src="/gemini-logo-white.svg" alt="Google Gemini" width={120} height={24} style={{ height: "auto", width: "auto" }} />
           </a>
           <a href="https://www.mux.com/" target="_blank" rel="noreferrer" aria-label="Mux">
-            <Image src="/mux-logo-small-white.svg" alt="Mux" width={80} height={24} style={{ height: "24px", width: "auto" }} />
+            <Image src="/mux-logo-small-white.svg" alt="Mux" width={80} height={24} style={{ height: "auto", width: "auto" }} />
           </a>
           <a href="https://github.com/vercel/workflow" target="_blank" rel="noreferrer" aria-label="Vercel Workflow">
-            <Image src="/vercel.svg" alt="Vercel" width={76} height={20} style={{ height: "20px", width: "auto" }} />
+            <Image src="/vercel.svg" alt="Vercel" width={76} height={20} style={{ height: "auto", width: "auto" }} />
           </a>
         </div>
         <p className="max-w-md text-xs font-light text-white/40">

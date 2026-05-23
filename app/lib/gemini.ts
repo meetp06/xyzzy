@@ -36,7 +36,9 @@ export function _resetRateLimiter(): void {
   apiKeyCursor = 0;
 }
 
-function getApiKeyPool(): string[] {
+const badKeys = new Set<string>();
+
+function rawApiKeyPool(): string[] {
   const poolEnv = process.env.GOOGLE_GENERATIVE_AI_API_KEYS;
   if (poolEnv) {
     const keys = poolEnv.split(",").map(k => k.trim()).filter(Boolean);
@@ -47,12 +49,31 @@ function getApiKeyPool(): string[] {
   return [single];
 }
 
+function getApiKeyPool(): string[] {
+  const all = rawApiKeyPool();
+  const usable = all.filter(k => !badKeys.has(k));
+  if (usable.length > 0) return usable;
+  // Every key is blacklisted — bail out with a clear error rather than infinite loop.
+  throw new Error(`All ${all.length} configured Gemini API key(s) failed with INVALID_ARGUMENT. Check GOOGLE_GENERATIVE_AI_API_KEYS in .env.local.`);
+}
+
+function markKeyBad(key: string, reason: string): void {
+  if (badKeys.has(key)) return;
+  badKeys.add(key);
+  console.warn(`[gemini] Disabling API key ...${key.slice(-4)} for this session: ${reason}`);
+}
+
 let apiKeyCursor = 0;
 function nextApiKey(): string {
   const pool = getApiKeyPool();
   const key = pool[apiKeyCursor % pool.length];
   apiKeyCursor++;
   return key;
+}
+
+function isInvalidKeyError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("API_KEY_INVALID") || msg.includes("API key not valid");
 }
 
 const clientsByKey = new Map<string, GoogleGenAI>();
@@ -137,6 +158,33 @@ export async function withRetry<T>(
         `[gemini] ${opts.label ?? "request"} attempt ${attempt}/${maxAttempts} failed (${err instanceof Error ? err.message : String(err)}). Retrying in ${delay}ms...`,
       );
       await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw lastErr;
+}
+
+/**
+ * Run `fn(client, apiKey)` with the next round-robin key. On API_KEY_INVALID,
+ * blacklist the key for the rest of this session and retry with the next.
+ */
+export async function withRotatedKey<T>(
+  fn: (client: GoogleGenAI, apiKey: string) => Promise<T>,
+  label: string,
+): Promise<T> {
+  const maxAttempts = rawApiKeyPool().length;
+  let lastErr: unknown;
+  for (let i = 0; i < maxAttempts; i++) {
+    const apiKey = nextApiKey();
+    const client = clientFor(apiKey);
+    try {
+      return await fn(client, apiKey);
+    } catch (err) {
+      lastErr = err;
+      if (isInvalidKeyError(err)) {
+        markKeyBad(apiKey, `INVALID_ARGUMENT on ${label}`);
+        continue;
+      }
+      throw err;
     }
   }
   throw lastErr;
@@ -295,8 +343,17 @@ const DEFAULT_NEGATIVE_PROMPT = "low quality, blurry, distorted face, mangled ha
 async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResult> {
   // Pin one key for the entire start → poll → download lifecycle.
   // Operation IDs are scoped to the key that created them.
-  const apiKey = nextApiKey();
-  const client = clientFor(apiKey);
+  // If the chosen key is bad, blacklist + retry with the next.
+  let apiKey = nextApiKey();
+  let client = clientFor(apiKey);
+  let pickAttempts = 0;
+  const maxPickAttempts = rawApiKeyPool().length;
+  while (pickAttempts < maxPickAttempts) {
+    if (!badKeys.has(apiKey)) break;
+    apiKey = nextApiKey();
+    client = clientFor(apiKey);
+    pickAttempts++;
+  }
   const keyTail = apiKey.slice(-4);
   console.log(`[gemini] Veo job using key ...${keyTail} (pool size ${getApiKeyPool().length})`);
 
@@ -351,6 +408,11 @@ async function generateVeoVideo(options: VeoCallOptions): Promise<VideoClipResul
       { label: "generateVideos start" },
     );
   } catch (err) {
+    if (isInvalidKeyError(err)) {
+      markKeyBad(apiKey, "INVALID_ARGUMENT on generateVideos start");
+      // Recurse once with a fresh key — pool filtering excludes the bad one now.
+      return generateVeoVideo(options);
+    }
     classifyVeoError(err);
   }
 
@@ -448,19 +510,20 @@ export async function generateText(
 ): Promise<string> {
   console.log("[gemini] generateText called, prompt length:", prompt.length);
 
-  const client = getGenAIClient();
-
   const config: Record<string, unknown> = {};
   if (systemInstruction) config.systemInstruction = systemInstruction;
   if (useGoogleSearch) config.tools = [{ googleSearch: {} }];
 
-  const result = await withRetry(
-    () => client.models.generateContent({
-      model: TEXT_MODEL,
-      contents: prompt,
-      config,
-    }),
-    { label: "generateContent" },
+  const result = await withRotatedKey(
+    (client) => withRetry(
+      () => client.models.generateContent({
+        model: TEXT_MODEL,
+        contents: prompt,
+        config,
+      }),
+      { label: "generateContent" },
+    ),
+    "generateContent",
   );
 
   const text = result.text;
@@ -487,20 +550,22 @@ export async function generateChatReply(
   userMessage: string,
   systemInstruction: string,
 ): Promise<string> {
-  const client = getGenAIClient();
-
-  const chat = client.chats.create({
-    model: TEXT_MODEL,
-    config: { systemInstruction },
-    history: history.map(turn => ({
-      role: turn.role,
-      parts: [{ text: turn.text }],
-    })),
-  });
-
-  const response = await withRetry(
-    () => chat.sendMessage({ message: userMessage }),
-    { label: "chat.sendMessage" },
+  const response = await withRotatedKey(
+    (client) => {
+      const chat = client.chats.create({
+        model: TEXT_MODEL,
+        config: { systemInstruction },
+        history: history.map(turn => ({
+          role: turn.role,
+          parts: [{ text: turn.text }],
+        })),
+      });
+      return withRetry(
+        () => chat.sendMessage({ message: userMessage }),
+        { label: "chat.sendMessage" },
+      );
+    },
+    "chat.sendMessage",
   );
 
   const text = response.text;

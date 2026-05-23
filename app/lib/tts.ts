@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer";
 import { Modality } from "@google/genai";
 
 import { env } from "./env";
-import { generateText, getGenAIClient, withRetry } from "./gemini";
+import { generateText, withRetry, withRotatedKey } from "./gemini";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Voice mapping — Gemini TTS prebuilt voice names
@@ -113,23 +113,24 @@ export async function generateTts(
 
   console.log("[tts] Calling Gemini TTS, voice:", voiceName, "lang:", languageCode);
 
-  const client = getGenAIClient();
-
-  const result = await withRetry(
-    () => client.models.generateContent({
-      model: TTS_MODEL,
-      contents: textToSpeak,
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          languageCode,
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName },
+  const result = await withRotatedKey(
+    (client) => withRetry(
+      () => client.models.generateContent({
+        model: TTS_MODEL,
+        contents: textToSpeak,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            languageCode,
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName },
+            },
           },
         },
-      },
-    }),
-    { label: "tts.generateContent" },
+      }),
+      { label: "tts.generateContent" },
+    ),
+    "tts.generateContent",
   );
 
   const part = result.candidates?.[0]?.content?.parts?.[0];
