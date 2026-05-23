@@ -19,6 +19,14 @@ function getMuxThumbnailUrl(playbackId: string): string {
   return `https://image.mux.com/${playbackId}/thumbnail.webp?width=640&height=360&fit_mode=smartcrop`;
 }
 
+const MAX_TITLE_WORDS = 4;
+
+function shortTitle(raw: string): string {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= MAX_TITLE_WORDS) return words.join(" ");
+  return words.slice(0, MAX_TITLE_WORDS).join(" ") + "…";
+}
+
 function getLocalVideoSrc(playbackId: string): string | null {
   if (!playbackId.startsWith("local:")) return null;
   const filename = playbackId.slice("local:".length);
@@ -155,10 +163,11 @@ export function ShowCard({ id, topic, templateName, showType, playbackId, durati
         {/* Content */}
         <div className="flex flex-1 flex-col gap-3 p-5 pb-14">
           <h3
-            className="line-clamp-3 text-xl font-extrabold leading-tight tracking-tight"
+            className="truncate text-2xl font-extrabold leading-tight tracking-tight"
             style={{ fontFamily: "var(--font-syne)" }}
+            title={topic}
           >
-            {topic}
+            {shortTitle(topic)}
           </h3>
 
           <div className="flex flex-wrap gap-2">
