@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 
-import { suggestTopicAction } from "./actions";
+import { expandTopicAction, suggestTopicAction } from "./actions";
 import { TOPIC_TYPES } from "./constants";
 
 interface TopicInputProps {
@@ -60,6 +60,8 @@ export function TopicInput({
 }: TopicInputProps) {
   const [isPending, startTransition] = useTransition();
   const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [isExpanding, startExpansion] = useTransition();
+  const [expandError, setExpandError] = useState<string | null>(null);
 
   const handleTopicChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -80,6 +82,18 @@ export function TopicInput({
       } else if (res.topic) {
         onTopicChange(res.topic);
         onTopicTypeChange(detectTopicType(res.topic));
+      }
+    });
+  };
+
+  const requestExpansion = () => {
+    setExpandError(null);
+    startExpansion(async () => {
+      const res = await expandTopicAction(topic, templateName);
+      if (res.error) {
+        setExpandError(res.error);
+      } else if (res.context) {
+        onContextChange(res.context);
       }
     });
   };
@@ -124,30 +138,59 @@ export function TopicInput({
             style={{ fontFamily: "var(--font-body)" }}
           />
 
-          <textarea
-            value={context}
-            onChange={e => onContextChange(e.target.value)}
-            placeholder="Extra context (optional) — angle, tone, audience, anything specific you want covered…"
-            rows={3}
-            className="w-full resize-none rounded-[14px] border border-[var(--border)] bg-white/[0.03] p-4 text-sm leading-relaxed text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-accent"
-            style={{ fontFamily: "var(--font-body)" }}
-          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={requestSuggestion}
+              disabled={isPending}
+              className="btn-outlined"
+              style={{ fontFamily: "var(--font-space-mono)" }}
+            >
+              {isPending ? "Thinking…" : topic ? "↻ Suggest a different topic" : "✦ Suggest a topic"}
+            </button>
+            <button
+              type="button"
+              onClick={requestExpansion}
+              disabled={isExpanding || !topic.trim()}
+              className="btn-outlined"
+              style={{ fontFamily: "var(--font-space-mono)" }}
+              title={!topic.trim() ? "Write a topic first" : "Have Gemini expand your topic into a fuller brief"}
+            >
+              {isExpanding ? "Expanding…" : context ? "↻ Regenerate context" : "✎ Generate more context"}
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={requestSuggestion}
-            disabled={isPending}
-            className="btn-outlined w-full"
-            style={{ fontFamily: "var(--font-space-mono)" }}
-          >
-            {isPending ? "Thinking…" : topic ? "↻ Suggest a different topic" : "Suggest a topic for me"}
-          </button>
-
-          {suggestError && (
+          {(suggestError || expandError) && (
             <p className="text-xs text-red-400" style={{ fontFamily: "var(--font-space-mono)" }}>
-              {suggestError}
+              {suggestError ?? expandError}
             </p>
           )}
+
+          {/* Editable expanded context — shown after expansion or if user typed their own */}
+          <div>
+            <label
+              className="mb-1 block text-[10px] font-bold uppercase tracking-[0.18em] text-white/55"
+              style={{ fontFamily: "var(--font-space-mono)" }}
+            >
+              Topic context (sent to the writer)
+            </label>
+            <textarea
+              value={context}
+              onChange={e => onContextChange(e.target.value)}
+              placeholder="Auto-fills when you click ‘Generate more context’, or type your own — angle, tone, audience, anything specific you want covered…"
+              rows={6}
+              className="w-full resize-y rounded-[14px] border border-[var(--border)] bg-white/[0.03] p-4 text-sm leading-relaxed text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{ fontFamily: "var(--font-body)" }}
+            />
+            {context.trim().length > 0 && (
+              <p
+                className="mt-1 text-[10px] text-white/45"
+                style={{ fontFamily: "var(--font-space-mono)" }}
+              >
+                {context.trim().split(/\s+/).filter(Boolean).length} words — included in the script-generation prompt.
+              </p>
+            )}
+          </div>
 
           {topic.trim().length > 0 && (
             <div className="flex items-center gap-2">

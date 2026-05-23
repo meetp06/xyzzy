@@ -61,6 +61,48 @@ Rules:
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Expand Topic — turn a short title into rich context the workflow can use
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ExpandTopicResult {
+  context?: string;
+  error?: string;
+}
+
+export async function expandTopicAction(topic: string, templateName?: string): Promise<ExpandTopicResult> {
+  try {
+    const trimmed = topic.trim();
+    if (!trimmed) return { error: "Topic is empty" };
+
+    const { generateText } = await import("@/app/lib/gemini");
+    const hostHint = templateName ? `The host is "${templateName}". ` : "";
+    const prompt = `${hostHint}A user has given the following topic title for a talk-show monologue:
+
+"${trimmed}"
+
+Expand this title into 4-7 sentences of rich, specific context the host can build a monologue from. Include:
+- The specific angle worth talking about
+- A concrete recent example, statistic, or anecdote (real or plausibly representative)
+- The cultural / business / tech / human reason this matters
+- A natural tension, contradiction, or surprise inside the topic
+- (Optional) An audience the host might be addressing
+
+Rules:
+- Plain prose, no bullets, no headings.
+- Do not write the monologue itself — write CONTEXT a writer would use.
+- Match tone the topic deserves; do not force comedy.
+- 80-180 words.`;
+
+    const context = await generateText(prompt, "You are a senior producer writing a segment brief. Output only the brief, no preamble.");
+    return { context: context.trim() };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to expand topic";
+    console.error("[expandTopicAction]", message);
+    return { error: message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Create Show
 // ─────────────────────────────────────────────────────────────────────────────
 
